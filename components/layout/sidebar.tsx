@@ -46,6 +46,7 @@ const navigationGroups = [
   {
     label: "System",
     items: [
+      { name: "Users", href: "/users", icon: Users },
       { name: "Profile", href: "#", icon: UserCircle },
       { name: "Logout", href: "#", icon: LogOut },
     ],
