@@ -24,6 +24,8 @@ export default async function WebsiteSettingsPage() {
             <TextArea label="Welcome message" name="welcomeMessage" defaultValue={barangay?.settings?.welcomeMessage} disabled={!canManage} />
             <Field label="Logo URL" name="logoUrl" defaultValue={barangay?.settings?.logoUrl} disabled={!canManage} />
             <Field label="Seal URL" name="sealUrl" defaultValue={barangay?.settings?.sealUrl} disabled={!canManage} />
+            <FileField label="Logo" name="logoFile" currentUrl={barangay?.settings?.logoUrl} removeName="removeLogo" disabled={!canManage} />
+            <FileField label="Seal" name="sealFile" currentUrl={barangay?.settings?.sealUrl} removeName="removeSeal" disabled={!canManage} />
             <Field label="Primary color" name="primaryColor" defaultValue={barangay?.settings?.primaryColor ?? "#047857"} disabled={!canManage} />
             <Field label="Secondary color" name="secondaryColor" defaultValue={barangay?.settings?.secondaryColor ?? "#0f766e"} disabled={!canManage} />
             <Field label="Facebook page URL" name="facebookPageUrl" defaultValue={barangay?.settings?.facebookPageUrl} disabled={!canManage} />
@@ -57,6 +59,26 @@ function TextArea({ label, name, defaultValue, disabled }: { label: string; name
     <label className="block md:col-span-2">
       <span className="text-sm font-medium text-slate-700">{label}</span>
       <textarea name={name} defaultValue={defaultValue ?? ""} disabled={disabled} rows={4} className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm" />
+    </label>
+  );
+}
+
+function FileField({ label, name, currentUrl, removeName, disabled }: { label: string; name: string; currentUrl?: string | null; removeName: string; disabled?: boolean }) {
+  return (
+    <label className="block">
+      <span className="text-sm font-medium text-slate-700">{label}</span>
+      <input type="file" name={name} disabled={disabled} className="mt-1 block w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-sm" />
+      <p className="mt-1 text-xs text-slate-500">JPG, PNG, or WebP up to 5MB.</p>
+      {currentUrl ? (
+        <span className="mt-2 block text-xs text-slate-600">
+          <img src={currentUrl} alt="" className="mb-2 h-16 w-16 rounded-md object-cover ring-1 ring-slate-200" />
+          <a href={currentUrl} className="font-medium text-emerald-700">Preview current image</a>
+          <span className="ml-2 inline-flex items-center gap-2">
+          <input type="checkbox" name={removeName} disabled={disabled} className="h-3.5 w-3.5" />
+          Remove
+          </span>
+        </span>
+      ) : null}
     </label>
   );
 }

@@ -28,6 +28,7 @@ export default async function PublicServicesPage({ params }: Props) {
               {service.requirements ? <Info label="Requirements" value={service.requirements} /> : null}
               {service.processingTime ? <Info label="Processing time" value={service.processingTime} /> : null}
               {service.feeText ? <Info label="Fee" value={service.feeText} /> : null}
+              {service.attachmentUrl ? <Link href={service.attachmentUrl} className="mt-3 inline-block text-sm font-medium text-emerald-700">Open service attachment</Link> : null}
               <Link href={service.requestLink || `/b/${barangay.slug}/request`} className="mt-4 inline-block text-sm font-medium text-emerald-700">Request or ask about this service</Link>
             </article>
           ))

@@ -9,6 +9,7 @@ import {
 } from "@/lib/announcements/access";
 import { logAuditEvent } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
+import { hasUpload, storeUpload } from "@/lib/storage";
 import { announcementFormSchema } from "@/lib/validation/announcement";
 
 function parseAnnouncementForm(formData: FormData) {
@@ -42,6 +43,14 @@ export async function createAnnouncement(formData: FormData) {
   }
 
   const parsed = parseAnnouncementForm(formData);
+  const imageFile = formData.get("featuredImageFile");
+  const attachmentFile = formData.get("attachmentFile");
+  const featuredImageUrl = hasUpload(imageFile)
+    ? await storeUpload({ barangayId: session.barangayId, file: imageFile, kind: "image", folder: "announcements" })
+    : parsed.featuredImageUrl;
+  const attachmentUrl = hasUpload(attachmentFile)
+    ? await storeUpload({ barangayId: session.barangayId, file: attachmentFile, kind: "document", folder: "announcements" })
+    : parsed.attachmentUrl;
   const announcement = await prisma.announcement.create({
     data: {
       barangayId: session.barangayId,
@@ -49,8 +58,8 @@ export async function createAnnouncement(formData: FormData) {
       title: parsed.title,
       body: parsed.body,
       category: parsed.category,
-      featuredImageUrl: parsed.featuredImageUrl,
-      attachmentUrl: parsed.attachmentUrl,
+      featuredImageUrl,
+      attachmentUrl,
       isPublished: parsed.isPublished,
       publishedAt: parsed.isPublished ? (parsed.publishedAt ?? new Date()) : null,
     },
@@ -67,6 +76,7 @@ export async function createAnnouncement(formData: FormData) {
     entityId: announcement.id,
     description: `Created announcement "${parsed.title}".`,
   });
+  await logAnnouncementUploads(session.barangayId, session.userId, announcement.id, imageFile, attachmentFile);
 
   revalidateAnnouncements();
   redirect(`${parsed.redirectBase}/${announcement.id}/edit?created=1`);
@@ -80,6 +90,18 @@ export async function updateAnnouncement(id: string, formData: FormData) {
   }
 
   const parsed = parseAnnouncementForm(formData);
+  const imageFile = formData.get("featuredImageFile");
+  const attachmentFile = formData.get("attachmentFile");
+  const featuredImageUrl = hasUpload(imageFile)
+    ? await storeUpload({ barangayId: session.barangayId, file: imageFile, kind: "image", folder: "announcements" })
+    : formData.get("removeFeaturedImage") === "on"
+      ? null
+      : parsed.featuredImageUrl;
+  const attachmentUrl = hasUpload(attachmentFile)
+    ? await storeUpload({ barangayId: session.barangayId, file: attachmentFile, kind: "document", folder: "announcements" })
+    : formData.get("removeAttachment") === "on"
+      ? null
+      : parsed.attachmentUrl;
   const current = await prisma.announcement.findFirst({
     where: {
       id,
@@ -103,8 +125,8 @@ export async function updateAnnouncement(id: string, formData: FormData) {
       title: parsed.title,
       body: parsed.body,
       category: parsed.category,
-      featuredImageUrl: parsed.featuredImageUrl,
-      attachmentUrl: parsed.attachmentUrl,
+      featuredImageUrl,
+      attachmentUrl,
       isPublished: parsed.isPublished,
       publishedAt: parsed.isPublished ? (parsed.publishedAt ?? (current.isPublished ? undefined : new Date())) : null,
     },
@@ -118,6 +140,7 @@ export async function updateAnnouncement(id: string, formData: FormData) {
     entityId: id,
     description: `Updated announcement "${parsed.title}".`,
   });
+  await logAnnouncementUploads(session.barangayId, session.userId, id, imageFile, attachmentFile);
 
   if (current.isPublished !== parsed.isPublished) {
     await logAuditEvent({
@@ -132,6 +155,36 @@ export async function updateAnnouncement(id: string, formData: FormData) {
 
   revalidateAnnouncements(id);
   redirect(`${parsed.redirectBase}/${id}/edit?updated=1`);
+}
+
+async function logAnnouncementUploads(
+  barangayId: string,
+  userId: string,
+  announcementId: string,
+  imageFile: FormDataEntryValue | null,
+  attachmentFile: FormDataEntryValue | null,
+) {
+  if (hasUpload(imageFile)) {
+    await logAuditEvent({
+      barangayId,
+      userId,
+      action: "ANNOUNCEMENT_FILE_UPLOADED",
+      entity: "Announcement",
+      entityId: announcementId,
+      description: "Uploaded announcement featured image.",
+    });
+  }
+
+  if (hasUpload(attachmentFile)) {
+    await logAuditEvent({
+      barangayId,
+      userId,
+      action: "ANNOUNCEMENT_FILE_UPLOADED",
+      entity: "Announcement",
+      entityId: announcementId,
+      description: "Uploaded announcement attachment.",
+    });
+  }
 }
 
 export async function setAnnouncementPublished(id: string, publish: boolean) {

@@ -56,7 +56,7 @@ export default async function PlatformDashboardPage() {
       >
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
           <StatCard label="Total barangays" value={totalBarangays} helper="Tenant workspaces created" icon={Building2} />
-          <StatCard label="Active barangays" value={totalBarangays} helper="Placeholder: no inactive tenant field yet" icon={Building2} tone="blue" />
+          <StatCard label="Active barangays" value={totalBarangays} helper="All current tenant workspaces" icon={Building2} tone="blue" />
           <StatCard label="Barangay users" value={totalBarangayUsers} helper="Users assigned to tenants" icon={Users} tone="blue" />
           <StatCard label="Total residents" value={totalResidents} helper="Across all tenant registries" icon={Users} tone="gold" />
           <StatCard label="Certificates" value={totalCertificates} helper="Across all tenant logbooks" icon={FileCheck2} />

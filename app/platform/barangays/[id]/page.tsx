@@ -69,7 +69,7 @@ export default async function BarangayDetailPage({ params, searchParams }: Baran
         {flags?.updated === "1" ? <Notice message="Barangay tenant profile was updated." /> : null}
 
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-          <StatCard label="Status" value="Active" helper="Placeholder: schema has no inactive field yet" icon={Building2} />
+          <StatCard label="Status" value="Active" helper="Tenant workspace is available" icon={Building2} />
           <StatCard label="Residents" value={barangay._count.residents} helper="Tenant registry records" icon={Users} tone="blue" />
           <StatCard label="Households" value={barangay._count.households} helper="Tenant household records" icon={Building2} tone="blue" />
           <StatCard label="Certificates" value={barangay._count.certificateRequests} helper="Tenant certificate records" icon={FileCheck2} tone="gold" />
@@ -80,7 +80,7 @@ export default async function BarangayDetailPage({ params, searchParams }: Baran
           <form action={updateBarangayTenant.bind(null, barangay.id)} className="space-y-5 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <div>
               <h2 className="text-lg font-semibold text-slate-950">Barangay Profile</h2>
-              <p className="mt-1 text-sm text-slate-500">Edit tenant profile basics. Activation is shown as a placeholder until the schema supports it.</p>
+              <p className="mt-1 text-sm text-slate-500">Edit tenant profile basics shown across the platform and public website.</p>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <Field label="Barangay name" name="name" defaultValue={barangay.name} required />
@@ -92,7 +92,7 @@ export default async function BarangayDetailPage({ params, searchParams }: Baran
               <Field label="Contact number" name="contactNumber" defaultValue={barangay.contactNumber ?? ""} />
             </div>
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-5">
-              <StatusBadge tone="success">Active placeholder</StatusBadge>
+              <StatusBadge tone="success">Active</StatusBadge>
               <button type="submit" className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700">
                 Save Changes
               </button>

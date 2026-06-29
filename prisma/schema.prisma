@@ -402,6 +402,7 @@ model PublicService {
   requirements   String?
   processingTime String?
   feeText        String?
+  attachmentUrl  String?
   requestLink    String?
   displayOrder   Int      @default(0)
   isPublished    Boolean  @default(true)

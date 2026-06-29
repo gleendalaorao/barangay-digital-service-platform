@@ -45,13 +45,28 @@ function ServiceForm() {
   );
 }
 
-function ServiceFields({ service, disabled }: { service?: { name: string; description: string; requirements: string | null; processingTime: string | null; feeText: string | null; requestLink: string | null; displayOrder: number; isPublished: boolean }; disabled?: boolean }) {
+function ServiceFields({ service, disabled }: { service?: { name: string; description: string; requirements: string | null; processingTime: string | null; feeText: string | null; attachmentUrl: string | null; requestLink: string | null; displayOrder: number; isPublished: boolean }; disabled?: boolean }) {
   return (
     <div className="mt-4 grid gap-3 md:grid-cols-2">
       <Field label="Service name" name="name" defaultValue={service?.name} required disabled={disabled} />
       <Field label="Processing time" name="processingTime" defaultValue={service?.processingTime} disabled={disabled} />
       <Field label="Fee text" name="feeText" defaultValue={service?.feeText} disabled={disabled} />
+      <Field label="Attachment URL" name="attachmentUrl" defaultValue={service?.attachmentUrl} disabled={disabled} />
       <Field label="Request link" name="requestLink" defaultValue={service?.requestLink} disabled={disabled} />
+      <label className="block">
+        <span className="text-sm font-medium text-slate-700">Attachment</span>
+        <input type="file" name="attachmentFile" disabled={disabled} className="mt-1 block w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-sm" />
+        <p className="mt-1 text-xs text-slate-500">PDF, DOC, or DOCX up to 10MB.</p>
+        {service?.attachmentUrl ? (
+          <span className="mt-2 block text-xs text-slate-600">
+            <a href={service.attachmentUrl} className="font-medium text-emerald-700">Preview current attachment</a>
+            <span className="ml-2 inline-flex items-center gap-2">
+            <input type="checkbox" name="removeAttachment" disabled={disabled} className="h-3.5 w-3.5" />
+            Remove
+            </span>
+          </span>
+        ) : null}
+      </label>
       <Field label="Display order" name="displayOrder" type="number" defaultValue={String(service?.displayOrder ?? 0)} disabled={disabled} />
       <label className="flex h-11 items-center gap-3 rounded-md border border-slate-200 px-3 text-sm text-slate-700">
         <input type="checkbox" name="isPublished" defaultChecked={service?.isPublished ?? true} disabled={disabled} />

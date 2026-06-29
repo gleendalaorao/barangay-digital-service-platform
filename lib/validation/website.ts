@@ -54,6 +54,7 @@ export const publicServiceSchema = z.object({
   requirements: optionalText(1200),
   processingTime: optionalText(120),
   feeText: optionalText(120),
+  attachmentUrl: optionalUrl,
   requestLink: optionalText(300),
   displayOrder: z.coerce.number().int().min(0).default(0),
   isPublished: z.coerce.boolean().default(false),

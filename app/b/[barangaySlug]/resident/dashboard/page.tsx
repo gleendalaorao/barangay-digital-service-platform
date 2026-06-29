@@ -3,7 +3,8 @@ import { redirect } from "next/navigation";
 import { ResidentAccountStatus } from "@prisma/client";
 import { FileText, LogOut, UserCheck } from "lucide-react";
 import { formatBarangayDisplayName } from "@/lib/barangay-display";
-import { formatDateTime } from "@/lib/certificates/format";
+import { formatCertificateType, formatDateTime } from "@/lib/certificates/format";
+import { formatPublicRequestStatus } from "@/lib/public-requests/format";
 import { formatResidentAccountName, formatResidentAccountStatus, getResidentStatusTone } from "@/lib/resident-accounts/format";
 import { getResidentSession } from "@/lib/resident-accounts/session";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -88,9 +89,28 @@ export default async function ResidentDashboardPage({ params, searchParams }: Re
 
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-lg font-semibold text-slate-950">Request History</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              Document request history for resident accounts will appear here in a later workflow pass.
-            </p>
+            {account.publicRequests.length === 0 ? (
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Requests submitted after verification will be listed here. You can also track any request using its tracking code.
+              </p>
+            ) : (
+              <div className="mt-3 space-y-3">
+                {account.publicRequests.map((request) => (
+                  <Link
+                    key={request.trackingCode}
+                    href={`/b/${account.barangay.slug}/track?requestNumber=${encodeURIComponent(request.trackingCode)}`}
+                    className="block rounded-md border border-slate-200 bg-slate-50 p-3 text-sm transition hover:border-emerald-200 hover:bg-emerald-50"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-semibold text-slate-950">{formatCertificateType(request.certificateType)}</p>
+                      <span className="text-xs text-slate-500">{formatDateTime(request.createdAt)}</span>
+                    </div>
+                    <p className="mt-1 text-xs text-slate-500">{request.trackingCode}</p>
+                    <p className="mt-2 text-sm text-slate-700">{formatPublicRequestStatus(request.status)}</p>
+                  </Link>
+                ))}
+              </div>
+            )}
             <div className="mt-5 border-t border-slate-100 pt-4">
               <h3 className="text-sm font-semibold text-slate-950">Verification Activity</h3>
               <div className="mt-3 space-y-3">

@@ -4,6 +4,7 @@ import {
   CertificateType,
   PrismaClient,
   PublicRequestStatus,
+  ResidentAccountStatus,
   Role,
   SubscriptionStatus,
 } from "@prisma/client";
@@ -85,6 +86,13 @@ async function main() {
       officialHeaderLine3: "Barangay San Isidro",
       releaseInstructions: "Approved documents are released at the barangay hall after identity verification.",
       certificateFooterNote: "This certificate is valid only for the purpose stated herein.",
+      welcomeTitle: "Welcome to Barangay San Isidro",
+      welcomeMessage:
+        "Access barangay services online, check public announcements, and track document requests from home or at the barangay hall.",
+      publicServiceTagline: "Fast, transparent, and resident-friendly barangay services.",
+      primaryColor: "#047857",
+      secondaryColor: "#0f766e",
+      facebookPageUrl: "https://www.facebook.com/barangaysanisidro",
     },
     create: {
       barangayId: barangay.id,
@@ -99,6 +107,13 @@ async function main() {
       officialHeaderLine3: "Barangay San Isidro",
       releaseInstructions: "Approved documents are released at the barangay hall after identity verification.",
       certificateFooterNote: "This certificate is valid only for the purpose stated herein.",
+      welcomeTitle: "Welcome to Barangay San Isidro",
+      welcomeMessage:
+        "Access barangay services online, check public announcements, and track document requests from home or at the barangay hall.",
+      publicServiceTagline: "Fast, transparent, and resident-friendly barangay services.",
+      primaryColor: "#047857",
+      secondaryColor: "#0f766e",
+      facebookPageUrl: "https://www.facebook.com/barangaysanisidro",
     },
   });
 
@@ -577,6 +592,67 @@ async function main() {
     });
   }
 
+  await prisma.residentAccount.upsert({
+    where: {
+      barangayId_email: {
+        barangayId: barangay.id,
+        email: "rosa.malinao@example.local",
+      },
+    },
+    update: {
+      firstName: "Rosa",
+      middleName: "Lim",
+      lastName: "Malinao",
+      suffix: null,
+      birthDate: new Date("1997-09-14T00:00:00+08:00"),
+      gender: "Female",
+      contactNumber: "+63 917 101 4001",
+      passwordHash,
+      addressLine: "Purok 3, San Isidro National Road",
+      purok: "Purok 3",
+      status: ResidentAccountStatus.PENDING_VERIFICATION,
+      residentId: null,
+      verifiedAt: null,
+    },
+    create: {
+      id: "seed-resident-account-rosa-malinao",
+      barangayId: barangay.id,
+      firstName: "Rosa",
+      middleName: "Lim",
+      lastName: "Malinao",
+      suffix: null,
+      birthDate: new Date("1997-09-14T00:00:00+08:00"),
+      gender: "Female",
+      contactNumber: "+63 917 101 4001",
+      email: "rosa.malinao@example.local",
+      passwordHash,
+      addressLine: "Purok 3, San Isidro National Road",
+      purok: "Purok 3",
+      status: ResidentAccountStatus.PENDING_VERIFICATION,
+    },
+  });
+
+  await prisma.residentVerificationRequest.upsert({
+    where: { id: "seed-verification-rosa-malinao" },
+    update: {
+      barangayId: barangay.id,
+      accountId: "seed-resident-account-rosa-malinao",
+      residentId: null,
+      status: ResidentAccountStatus.PENDING_VERIFICATION,
+      purpose: "Online account registration for requesting barangay certificates.",
+      staffNotes: null,
+      reviewedById: null,
+      reviewedAt: null,
+    },
+    create: {
+      id: "seed-verification-rosa-malinao",
+      barangayId: barangay.id,
+      accountId: "seed-resident-account-rosa-malinao",
+      status: ResidentAccountStatus.PENDING_VERIFICATION,
+      purpose: "Online account registration for requesting barangay certificates.",
+    },
+  });
+
   const announcements = [
     {
       id: "seed-announcement-san-isidro-cleanup",
@@ -613,6 +689,104 @@ async function main() {
       create: {
         ...announcement,
         barangayId: barangay.id,
+      },
+    });
+  }
+
+  const officials = [
+    {
+      id: "seed-official-san-isidro-captain",
+      name: "Hon. Roberto D. Villanueva",
+      position: "Barangay Captain",
+      contact: "+63 917 555 0184",
+      displayOrder: 1,
+    },
+    {
+      id: "seed-official-san-isidro-secretary",
+      name: "Maria Teresa A. Santos",
+      position: "Barangay Secretary",
+      contact: "office@sanisidro.local",
+      displayOrder: 2,
+    },
+    {
+      id: "seed-official-san-isidro-treasurer",
+      name: "Elena P. Dela Cruz",
+      position: "Barangay Treasurer",
+      contact: "+63 917 555 0185",
+      displayOrder: 3,
+    },
+  ];
+
+  for (const official of officials) {
+    await prisma.publicOfficial.upsert({
+      where: { id: official.id },
+      update: {
+        barangayId: barangay.id,
+        name: official.name,
+        position: official.position,
+        contact: official.contact,
+        displayOrder: official.displayOrder,
+        isPublished: true,
+      },
+      create: {
+        ...official,
+        barangayId: barangay.id,
+        isPublished: true,
+      },
+    });
+  }
+
+  const services = [
+    {
+      id: "seed-service-san-isidro-clearance",
+      name: "Barangay Clearance",
+      description: "Certificate for employment, business permit renewal, internship, or other official requirements.",
+      requirements: "Valid ID; purpose of request; updated resident profile",
+      processingTime: "Same day if records are complete",
+      feeText: "Please confirm applicable fees at the barangay hall.",
+      requestLink: `/b/${barangay.slug}/request`,
+      displayOrder: 1,
+    },
+    {
+      id: "seed-service-san-isidro-residency",
+      name: "Certificate of Residency",
+      description: "Proof that a resident currently lives in Barangay San Isidro.",
+      requirements: "Valid ID; current address; purok information",
+      processingTime: "Same day review",
+      feeText: "Free for most public service requirements.",
+      requestLink: `/b/${barangay.slug}/request`,
+      displayOrder: 2,
+    },
+    {
+      id: "seed-service-san-isidro-indigency",
+      name: "Certificate of Indigency",
+      description: "Supporting document for medical, educational, and social assistance applications.",
+      requirements: "Valid ID; statement of purpose; household information",
+      processingTime: "1 working day",
+      feeText: "No fee",
+      requestLink: `/b/${barangay.slug}/request`,
+      displayOrder: 3,
+    },
+  ];
+
+  for (const service of services) {
+    await prisma.publicService.upsert({
+      where: { id: service.id },
+      update: {
+        barangayId: barangay.id,
+        name: service.name,
+        description: service.description,
+        requirements: service.requirements,
+        processingTime: service.processingTime,
+        feeText: service.feeText,
+        requestLink: service.requestLink,
+        displayOrder: service.displayOrder,
+        isPublished: true,
+      },
+      create: {
+        ...service,
+        barangayId: barangay.id,
+        isPublished: true,
       },
     });
   }

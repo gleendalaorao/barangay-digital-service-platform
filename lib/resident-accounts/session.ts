@@ -92,6 +92,16 @@ export async function getResidentSession(barangaySlug: string) {
         orderBy: { submittedAt: "desc" },
         take: 5,
       },
+      publicRequests: {
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        select: {
+          trackingCode: true,
+          certificateType: true,
+          status: true,
+          createdAt: true,
+        },
+      },
     },
   });
 }

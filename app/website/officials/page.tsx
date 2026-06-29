@@ -52,6 +52,21 @@ function OfficialFields({ official, disabled }: { official?: { name: string; pos
       <Field label="Position" name="position" defaultValue={official?.position} required disabled={disabled} />
       <Field label="Contact" name="contact" defaultValue={official?.contact} disabled={disabled} />
       <Field label="Photo URL" name="photoUrl" defaultValue={official?.photoUrl} disabled={disabled} />
+      <label className="block">
+        <span className="text-sm font-medium text-slate-700">Photo</span>
+        <input type="file" name="photoFile" disabled={disabled} className="mt-1 block w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-sm" />
+        <p className="mt-1 text-xs text-slate-500">JPG, PNG, or WebP up to 5MB.</p>
+        {official?.photoUrl ? (
+          <span className="mt-2 block text-xs text-slate-600">
+            <img src={official.photoUrl} alt="" className="mb-2 h-16 w-16 rounded-full object-cover ring-1 ring-slate-200" />
+            <a href={official.photoUrl} className="font-medium text-emerald-700">Preview current photo</a>
+            <span className="ml-2 inline-flex items-center gap-2">
+            <input type="checkbox" name="removePhoto" disabled={disabled} className="h-3.5 w-3.5" />
+            Remove
+            </span>
+          </span>
+        ) : null}
+      </label>
       <Field label="Display order" name="displayOrder" type="number" defaultValue={String(official?.displayOrder ?? 0)} disabled={disabled} />
       <label className="flex h-11 items-center gap-3 rounded-md border border-slate-200 px-3 text-sm text-slate-700">
         <input type="checkbox" name="isPublished" defaultChecked={official?.isPublished ?? true} disabled={disabled} />
