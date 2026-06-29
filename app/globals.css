@@ -114,4 +114,18 @@ tbody tr:hover {
     box-shadow: none;
     border: 0;
   }
+
+  #resident-profile-print,
+  #resident-profile-print * {
+    visibility: visible;
+  }
+
+  #resident-profile-print {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    padding: 0;
+    box-shadow: none;
+    border: 0;
+  }
 }
