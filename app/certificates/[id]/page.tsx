@@ -20,6 +20,7 @@ import { buildCertificateDocument, canExportCertificate } from "@/lib/certificat
 import { getCertificateAccessMessage, requireCertificateSession } from "@/lib/certificates/access";
 import { formatCertificateStatus, formatCertificateType, formatDateTime } from "@/lib/certificates/format";
 import { getCertificateForRender } from "@/lib/certificates/query";
+import { generateQrDataUrl, getCertificateVerificationUrl } from "@/lib/certificates/qr";
 import { calculateAge, formatResidentName } from "@/lib/residents/format";
 
 type CertificateDetailPageProps = {
@@ -48,8 +49,10 @@ export default async function CertificateDetailPage({ params }: CertificateDetai
     notFound();
   }
 
-  const certificateDocument = certificate.resident ? buildCertificateDocument(certificate) : null;
+  const verificationUrl = getCertificateVerificationUrl(certificate.id);
+  const certificateDocument = certificate.resident ? buildCertificateDocument(certificate, verificationUrl) : null;
   const exportReady = canExportCertificate(certificate.status);
+  const qrCodeDataUrl = exportReady ? await generateQrDataUrl(verificationUrl) : null;
 
   return (
     <DashboardShell>
@@ -98,7 +101,7 @@ export default async function CertificateDetailPage({ params }: CertificateDetai
                 Export is available after the certificate is approved.
               </div>
             ) : null}
-            {certificateDocument ? <CertificatePreview document={certificateDocument} /> : null}
+            {certificateDocument ? <CertificatePreview document={certificateDocument} qrCodeDataUrl={qrCodeDataUrl} /> : null}
           </div>
         </div>
       </CertificateDetailFrame>
@@ -208,7 +211,13 @@ function Info({ label, value }: { label: string; value?: string | null }) {
   );
 }
 
-function CertificatePreview({ document }: { document: ReturnType<typeof buildCertificateDocument> }) {
+function CertificatePreview({
+  document,
+  qrCodeDataUrl,
+}: {
+  document: ReturnType<typeof buildCertificateDocument>;
+  qrCodeDataUrl: string | null;
+}) {
   return (
     <section id="certificate-preview" className="rounded-md border border-slate-200 bg-white p-8 shadow-sm">
       <div className="text-center">
@@ -267,6 +276,13 @@ function CertificatePreview({ document }: { document: ReturnType<typeof buildCer
           <p className="text-ink-500">Approved by / Barangay Captain</p>
         </div>
       </div>
+      {qrCodeDataUrl ? (
+        <div className="mt-10 flex flex-col items-center text-center">
+          <img src={qrCodeDataUrl} alt="Certificate verification QR code" className="h-28 w-28" />
+          <p className="mt-2 text-xs font-medium text-ink-700">Scan to verify authenticity</p>
+          <p className="mt-1 break-all text-[11px] text-ink-500">{document.verificationUrl}</p>
+        </div>
+      ) : null}
       {document.footerNote ? <p className="mt-10 text-center text-xs text-ink-500">{document.footerNote}</p> : null}
     </section>
   );

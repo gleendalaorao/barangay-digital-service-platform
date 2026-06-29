@@ -2,14 +2,17 @@ import {
   AlignmentType,
   Document,
   HeadingLevel,
+  ImageRun,
   Packer,
   Paragraph,
   TextRun,
   UnderlineType,
 } from "docx";
 import type { CertificateDocument } from "@/lib/certificates/content";
+import { generateQrBuffer } from "@/lib/certificates/qr";
 
 export async function renderCertificateDocx(document: CertificateDocument) {
+  const qrCode = await generateQrBuffer(document.verificationUrl);
   const doc = new Document({
     sections: [
       {
@@ -51,6 +54,22 @@ export async function renderCertificateDocx(document: CertificateDocument) {
             children: [new TextRun("Prepared by"), new TextRun({ text: "\t\t" }), new TextRun("Approved by / Barangay Captain")],
             tabStops: [{ type: "left", position: 5200 }],
           }),
+          spacer(),
+          new Paragraph({
+            children: [
+              new ImageRun({
+                data: qrCode,
+                type: "png",
+                transformation: {
+                  width: 90,
+                  height: 90,
+                },
+              }),
+            ],
+            alignment: AlignmentType.CENTER,
+          }),
+          centered("Scan to verify authenticity"),
+          centered(document.verificationUrl),
           ...(document.footerNote ? [spacer(), centered(document.footerNote)] : []),
         ],
       },

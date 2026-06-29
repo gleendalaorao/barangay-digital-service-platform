@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { buildCertificateDocument, canExportCertificate } from "@/lib/certificates/content";
 import { renderCertificateDocx } from "@/lib/certificates/docx";
 import { getCertificateForRender } from "@/lib/certificates/query";
+import { getCertificateVerificationUrl } from "@/lib/certificates/qr";
 import { requireCertificateSession } from "@/lib/certificates/access";
 
 export const runtime = "nodejs";
@@ -23,7 +24,7 @@ export async function GET(_request: Request, { params }: ExportRouteProps) {
     return NextResponse.json({ error: "Only approved or released certificates can be exported." }, { status: 403 });
   }
 
-  const document = buildCertificateDocument(certificate);
+  const document = buildCertificateDocument(certificate, getCertificateVerificationUrl(certificate.id));
   const docx = await renderCertificateDocx(document);
   const fileName = `${document.controlNumber || "certificate"}.docx`;
 

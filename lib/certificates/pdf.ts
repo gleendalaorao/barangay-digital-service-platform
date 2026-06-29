@@ -1,7 +1,10 @@
 import PDFDocument from "pdfkit";
 import type { CertificateDocument } from "@/lib/certificates/content";
+import { generateQrBuffer } from "@/lib/certificates/qr";
 
 export async function renderCertificatePdf(document: CertificateDocument) {
+  const qrCode = await generateQrBuffer(document.verificationUrl);
+
   return new Promise<Buffer>((resolve, reject) => {
     const pdf = new PDFDocument({
       size: "A4",
@@ -66,9 +69,21 @@ export async function renderCertificatePdf(document: CertificateDocument) {
       width: 180,
       align: "center",
     });
+    pdf.moveDown(4);
+
+    const qrY = pdf.y;
+    pdf.image(qrCode, 246, qrY, { width: 90, height: 90 });
+    pdf.font("Times-Roman").fontSize(8).text("Scan to verify authenticity", 72, qrY + 96, {
+      width: 468,
+      align: "center",
+    });
+    pdf.fontSize(7).text(document.verificationUrl, 72, qrY + 108, {
+      width: 468,
+      align: "center",
+    });
 
     if (document.footerNote) {
-      pdf.moveDown(5);
+      pdf.y = qrY + 126;
       pdf.font("Times-Roman").fontSize(9).text(document.footerNote, { align: "center" });
     }
 

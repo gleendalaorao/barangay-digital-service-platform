@@ -32,6 +32,7 @@ export type CertificateDocument = {
   footerNote?: string;
   logoUrl?: string;
   sealUrl?: string;
+  verificationUrl: string;
   status: CertificateStatus;
 };
 
@@ -39,7 +40,7 @@ export function canExportCertificate(status: CertificateStatus) {
   return status === CertificateStatus.APPROVED || status === CertificateStatus.RELEASED;
 }
 
-export function buildCertificateDocument(certificate: CertificateRenderData): CertificateDocument {
+export function buildCertificateDocument(certificate: CertificateRenderData, verificationUrl: string): CertificateDocument {
   if (!certificate.resident) {
     throw new Error("Certificate export requires an attached resident record.");
   }
@@ -95,6 +96,7 @@ export function buildCertificateDocument(certificate: CertificateRenderData): Ce
     footerNote: settings?.certificateFooterNote ?? undefined,
     logoUrl: settings?.logoUrl ?? undefined,
     sealUrl: settings?.sealUrl ?? undefined,
+    verificationUrl,
     status: certificate.status,
   };
 }
