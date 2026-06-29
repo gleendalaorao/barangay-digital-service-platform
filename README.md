@@ -128,8 +128,8 @@ During a demo, open an approved or released certificate from the Certificate Log
 Run the main verification commands:
 
 ```bash
-npx prisma validate
-npx prisma generate
+npm run prisma:validate
+npm run prisma:generate
 npm run typecheck
 npm run build
 ```
@@ -142,3 +142,75 @@ npm run smoke:routes
 ```
 
 The smoke script signs in as the seeded barangay admin, checks the main demo routes, verifies that SECRETARY and STAFF cannot manage users, and confirms that SUPER_ADMIN without barangay context sees the expected placeholder.
+
+## Deployment Readiness
+
+This project is prepared for later cloud deployment without subscriptions, billing, platform admin, or extra business modules.
+
+### Local Development Setup
+
+1. Install dependencies with `npm install`.
+2. Copy `.env.example` to `.env`.
+3. Set `DATABASE_URL`, `AUTH_SECRET`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, and `APP_URL`.
+4. Run `npm run db:push` for a local demo database, or run Prisma migrations if your environment uses migration files.
+5. Run `npm run prisma:generate`.
+6. Seed demo data with `npm run db:seed`.
+7. Start the app with `npm run dev`.
+
+### Required Environment Variables
+
+```env
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE?schema=public"
+AUTH_SECRET="use-a-strong-random-secret-at-least-32-characters"
+NEXTAUTH_SECRET="use-the-same-strong-secret-or-a-compatible-auth-secret"
+NEXTAUTH_URL="https://your-app.example.com"
+APP_URL="https://your-app.example.com"
+```
+
+Use production URLs for `NEXTAUTH_URL` and `APP_URL` in cloud environments. Do not commit real secrets.
+
+### Vercel Deployment Notes
+
+- Create a Vercel project from the repository.
+- Add all required environment variables in the Vercel project settings.
+- Use the production app origin for `NEXTAUTH_URL` and `APP_URL`.
+- Keep Auth.js `trustHost` enabled for cloud-hosted requests.
+- Run Prisma deployment steps against the production database before opening the app to users.
+- Use `/api/health` for a lightweight health check. It returns app status, timestamp, and whether the database is reachable.
+
+### Neon or Supabase PostgreSQL Notes
+
+- Use the provider's pooled or direct PostgreSQL connection string as `DATABASE_URL`.
+- Confirm SSL requirements from the database provider and include any required connection string parameters.
+- Keep separate databases or schemas for local development, demos, staging, and production.
+- Do not seed demo accounts into a real production barangay workspace.
+
+### Prisma Database Push and Migration Notes
+
+- For disposable demo environments, `npm run db:push` is acceptable to sync the Prisma schema quickly.
+- For production-like environments, prefer reviewed Prisma migrations and apply them during deployment.
+- Always run `npm run prisma:validate` and `npm run prisma:generate` after schema changes.
+- Confirm the target `DATABASE_URL` before running `db:push`, migrations, or seed commands.
+
+### Seed Demo Data
+
+Seed data is for local demos and demo cloud environments only:
+
+```bash
+npm run db:seed
+```
+
+The seed creates Barangay San Isidro demo records and login accounts. Do not run it in a real production tenant unless you intentionally want demo data.
+
+### Deployment Checklist
+
+- Set `DATABASE_URL`.
+- Set `AUTH_SECRET` and `NEXTAUTH_SECRET`.
+- Set `NEXTAUTH_URL`.
+- Set `APP_URL`.
+- Run Prisma migration or `npm run db:push` against the target database.
+- Run `npm run db:seed` only for demo environments.
+- Verify staff login at `/login`.
+- Verify the public portal at `/b/san-isidro` or the deployed barangay slug.
+- Verify QR certificate verification at `/verify/{certificateId}`.
+- Verify `/api/health` does not expose secrets and reports database reachability.
