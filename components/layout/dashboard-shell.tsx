@@ -3,7 +3,7 @@ import { Sidebar } from "./sidebar";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#f7f9f8]">
+    <div className="min-h-screen bg-slate-50">
       <Sidebar />
       <div className="lg:pl-72">
         <Header />

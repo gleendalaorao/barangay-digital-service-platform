@@ -3,6 +3,7 @@ import { DashboardActionGrid } from "@/components/dashboard/dashboard-action-gri
 import { OperationsSnapshot } from "@/components/dashboard/operations-snapshot";
 import { RecentActivity } from "@/components/dashboard/recent-activity";
 import { getDashboardData } from "@/lib/dashboard/data";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default async function DashboardPage() {
   const dashboard = await getDashboardData();
@@ -10,21 +11,15 @@ export default async function DashboardPage() {
   return (
     <DashboardShell>
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-6 sm:px-6 lg:px-8">
-        <section className="flex flex-col gap-3">
-          <p className="text-sm font-medium uppercase tracking-[0.16em] text-brand-700">
-            Today&apos;s Barangay Work
-          </p>
+        <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
-            <div>
-              <h1 className="max-w-3xl text-3xl font-semibold text-ink-900 sm:text-4xl">
-                Digital services for the barangay counter and citizen requests.
-              </h1>
-              <p className="mt-3 max-w-2xl text-base leading-7 text-ink-500">
-                A focused workspace for resident lookup, certificates, public requests, and daily operational records.
-              </p>
-            </div>
+            <PageHeader
+              eyebrow="Command Center"
+              title="Barangay operations at a glance"
+              description="Monitor citizen records, certificate workflows, and online requests from one tenant-isolated workspace."
+            />
             {dashboard.kind === "barangay" ? (
-              <div className="rounded-md border border-teal-200 bg-white px-4 py-3 text-sm text-ink-700 shadow-sm">
+              <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
                 {dashboard.barangayName}
               </div>
             ) : null}
@@ -42,7 +37,10 @@ export default async function DashboardPage() {
         ) : (
           <>
             <OperationsSnapshot metrics={dashboard.metrics} />
-            <DashboardActionGrid />
+            <div>
+              <h2 className="mb-4 text-lg font-semibold text-slate-950">Quick Actions</h2>
+              <DashboardActionGrid />
+            </div>
             <RecentActivity
               certificates={dashboard.latestCertificates}
               publicRequests={dashboard.latestPublicRequests}

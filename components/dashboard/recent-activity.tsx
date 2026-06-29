@@ -3,6 +3,7 @@ import type { LatestCertificate, LatestPublicRequest } from "@/lib/dashboard/dat
 import { formatCertificateStatus, formatCertificateType, formatDateTime } from "@/lib/certificates/format";
 import { formatPublicRequestStatus } from "@/lib/public-requests/format";
 import { formatResidentName } from "@/lib/residents/format";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 export function RecentActivity({
   certificates,
@@ -28,9 +29,9 @@ export function RecentActivity({
                       {formatCertificateType(certificate.certificateType)}
                     </p>
                   </div>
-                  <span className="shrink-0 text-xs font-medium text-brand-700">
+                  <StatusBadge tone="info">
                     {formatCertificateStatus(certificate.status)}
-                  </span>
+                  </StatusBadge>
                 </div>
                 <p className="mt-2 text-xs text-ink-500">{formatDateTime(certificate.createdAt)}</p>
               </Link>
@@ -53,9 +54,9 @@ export function RecentActivity({
                       {request.requesterName} · {formatCertificateType(request.certificateType)}
                     </p>
                   </div>
-                  <span className="shrink-0 text-xs font-medium text-brand-700">
+                  <StatusBadge tone="warning">
                     {formatPublicRequestStatus(request.status)}
-                  </span>
+                  </StatusBadge>
                 </div>
                 <p className="mt-2 text-xs text-ink-500">{formatDateTime(request.submittedAt)}</p>
               </Link>
@@ -69,9 +70,9 @@ export function RecentActivity({
 
 function ActivityPanel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
+    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
       <div className="border-b border-slate-200 px-5 py-4">
-        <h2 className="text-lg font-semibold text-ink-900">{title}</h2>
+        <h2 className="text-lg font-semibold text-slate-950">{title}</h2>
       </div>
       {children}
     </div>
