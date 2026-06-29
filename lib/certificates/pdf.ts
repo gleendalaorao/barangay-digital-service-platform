@@ -17,10 +17,17 @@ export async function renderCertificatePdf(document: CertificateDocument) {
     pdf.on("end", () => resolve(Buffer.concat(chunks)));
     pdf.on("error", reject);
 
-    pdf.font("Times-Bold").fontSize(12).text("Republic of the Philippines", { align: "center" });
-    pdf.font("Times-Roman").fontSize(11).text(document.municipalityLine, { align: "center" });
-    pdf.font("Times-Bold").fontSize(14).text(`Barangay ${document.barangayName}`, { align: "center" });
+    document.headerLines.forEach((line, index) => {
+      pdf.font(index === document.headerLines.length - 1 ? "Times-Bold" : "Times-Roman");
+      pdf.fontSize(index === document.headerLines.length - 1 ? 14 : 11).text(line, { align: "center" });
+    });
     pdf.font("Times-Roman").fontSize(10).text(document.officeAddress, { align: "center" });
+    if (document.logoUrl || document.sealUrl) {
+      pdf.moveDown();
+      pdf.fontSize(8).text(`Logo/Seal: ${[document.logoUrl, document.sealUrl].filter(Boolean).join(" | ")}`, {
+        align: "center",
+      });
+    }
     pdf.moveDown(2);
 
     pdf.font("Times-Bold").fontSize(18).text(document.title.toUpperCase(), { align: "center" });
@@ -59,6 +66,11 @@ export async function renderCertificatePdf(document: CertificateDocument) {
       width: 180,
       align: "center",
     });
+
+    if (document.footerNote) {
+      pdf.moveDown(5);
+      pdf.font("Times-Roman").fontSize(9).text(document.footerNote, { align: "center" });
+    }
 
     pdf.end();
   });

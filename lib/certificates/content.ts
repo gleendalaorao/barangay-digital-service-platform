@@ -15,6 +15,7 @@ export type CertificateDocument = {
   title: string;
   barangayName: string;
   municipalityLine: string;
+  headerLines: string[];
   officeAddress: string;
   controlNumber: string;
   residentName: string;
@@ -25,6 +26,12 @@ export type CertificateDocument = {
   issuedDate: string;
   preparedBy: string;
   approvedBy: string;
+  secretaryName: string;
+  treasurerName: string;
+  captainName: string;
+  footerNote?: string;
+  logoUrl?: string;
+  sealUrl?: string;
   status: CertificateStatus;
 };
 
@@ -50,14 +57,23 @@ export function buildCertificateDocument(certificate: CertificateRenderData): Ce
   const issuedDate = formatDate(certificate.issuedAt ?? certificate.updatedAt ?? certificate.createdAt);
   const purpose = certificate.purpose ?? "official barangay purposes";
   const title = getCertificateTitle(certificate.certificateType);
+  const settings = certificate.barangay.settings;
+  const municipalityLine = [certificate.barangay.municipality, certificate.barangay.province, certificate.barangay.region]
+    .filter(Boolean)
+    .join(", ");
+  const headerLines = [
+    settings?.officialHeaderLine1 ?? "Republic of the Philippines",
+    settings?.officialHeaderLine2 ?? municipalityLine,
+    settings?.officialHeaderLine3 ?? `Barangay ${barangayName}`,
+  ].filter(Boolean);
+  const captainName = settings?.captainName ?? certificate.approvedBy?.name ?? "Barangay Captain";
 
   return {
     title,
     barangayName,
-    municipalityLine: [certificate.barangay.municipality, certificate.barangay.province, certificate.barangay.region]
-      .filter(Boolean)
-      .join(", "),
-    officeAddress: certificate.barangay.settings?.officeAddress ?? `${barangayName} Barangay Hall`,
+    municipalityLine,
+    headerLines,
+    officeAddress: settings?.officeAddress ?? `${barangayName} Barangay Hall`,
     controlNumber: certificate.controlNumber ?? "-",
     residentName,
     residentAddress,
@@ -71,8 +87,14 @@ export function buildCertificateDocument(certificate: CertificateRenderData): Ce
       issuedDate,
     }),
     issuedDate,
-    preparedBy: certificate.requestedBy?.name ?? "Barangay Staff",
-    approvedBy: certificate.approvedBy?.name ?? "Barangay Captain",
+    preparedBy: certificate.requestedBy?.name ?? settings?.secretaryName ?? "Barangay Staff",
+    approvedBy: certificate.approvedBy?.name ?? captainName,
+    secretaryName: settings?.secretaryName ?? "Barangay Secretary",
+    treasurerName: settings?.treasurerName ?? "Barangay Treasurer",
+    captainName,
+    footerNote: settings?.certificateFooterNote ?? undefined,
+    logoUrl: settings?.logoUrl ?? undefined,
+    sealUrl: settings?.sealUrl ?? undefined,
     status: certificate.status,
   };
 }

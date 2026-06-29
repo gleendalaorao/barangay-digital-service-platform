@@ -15,10 +15,11 @@ export async function renderCertificateDocx(document: CertificateDocument) {
       {
         properties: {},
         children: [
-          centered("Republic of the Philippines", true),
-          centered(document.municipalityLine),
-          centered(`Barangay ${document.barangayName}`, true),
+          ...document.headerLines.map((line, index) => centered(line, index === document.headerLines.length - 1)),
           centered(document.officeAddress),
+          ...(document.logoUrl || document.sealUrl
+            ? [centered(`Logo/Seal: ${[document.logoUrl, document.sealUrl].filter(Boolean).join(" | ")}`)]
+            : []),
           spacer(),
           new Paragraph({
             text: document.title.toUpperCase(),
@@ -50,6 +51,7 @@ export async function renderCertificateDocx(document: CertificateDocument) {
             children: [new TextRun("Prepared by"), new TextRun({ text: "\t\t" }), new TextRun("Approved by / Barangay Captain")],
             tabStops: [{ type: "left", position: 5200 }],
           }),
+          ...(document.footerNote ? [spacer(), centered(document.footerNote)] : []),
         ],
       },
     ],

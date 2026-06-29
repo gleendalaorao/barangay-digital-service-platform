@@ -5,6 +5,7 @@ import {
   Home,
   Inbox,
   LayoutDashboard,
+  Settings,
   Search,
   Users,
 } from "lucide-react";
@@ -18,6 +19,7 @@ const navigation = [
   { name: "Logbook", href: "/certificates", icon: BookOpenCheck, current: false },
   { name: "Requests", href: "/requests", icon: Inbox, current: false },
   { name: "Households", href: "/households", icon: Home, current: false },
+  { name: "Settings", href: "/settings/barangay", icon: Settings, current: false },
   { name: "Reports", href: "#", icon: BarChart3, current: false },
 ];
 

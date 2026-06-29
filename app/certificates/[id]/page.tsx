@@ -212,10 +212,27 @@ function CertificatePreview({ document }: { document: ReturnType<typeof buildCer
   return (
     <section id="certificate-preview" className="rounded-md border border-slate-200 bg-white p-8 shadow-sm">
       <div className="text-center">
-        <p className="text-sm text-ink-700">Republic of the Philippines</p>
-        <p className="text-sm text-ink-700">{document.municipalityLine}</p>
-        <p className="mt-1 text-lg font-semibold text-ink-900">Barangay {document.barangayName}</p>
+        {document.headerLines.map((line, index) => (
+          <p
+            key={line}
+            className={index === document.headerLines.length - 1 ? "mt-1 text-lg font-semibold text-ink-900" : "text-sm text-ink-700"}
+          >
+            {line}
+          </p>
+        ))}
         <p className="text-xs text-ink-500">{document.officeAddress}</p>
+        {document.logoUrl || document.sealUrl ? (
+          <div className="mt-4 grid grid-cols-2 gap-3 text-xs text-ink-500">
+            <div className="rounded-md border border-dashed border-slate-300 p-3">
+              <p className="font-medium text-ink-700">Logo URL</p>
+              <p className="mt-1 break-all">{document.logoUrl || "Not configured"}</p>
+            </div>
+            <div className="rounded-md border border-dashed border-slate-300 p-3">
+              <p className="font-medium text-ink-700">Seal URL</p>
+              <p className="mt-1 break-all">{document.sealUrl || "Not configured"}</p>
+            </div>
+          </div>
+        ) : null}
       </div>
 
       <div className="mt-8 text-center">
@@ -250,6 +267,7 @@ function CertificatePreview({ document }: { document: ReturnType<typeof buildCer
           <p className="text-ink-500">Approved by / Barangay Captain</p>
         </div>
       </div>
+      {document.footerNote ? <p className="mt-10 text-center text-xs text-ink-500">{document.footerNote}</p> : null}
     </section>
   );
 }

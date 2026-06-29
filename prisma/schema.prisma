@@ -237,15 +237,25 @@ model PublicDocumentRequest {
 }
 
 model BarangaySetting {
-  id              String   @id @default(cuid())
-  barangayId      String   @unique
-  certificatePrefix String @default("BRGY")
-  releaseInstructions String?
-  officeAddress   String?
-  officeHours     String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  barangay        Barangay @relation(fields: [barangayId], references: [id], onDelete: Cascade)
+  id                    String   @id @default(cuid())
+  barangayId            String   @unique
+  certificatePrefix     String   @default("BRGY")
+  releaseInstructions   String?
+  officeAddress         String?
+  officeHours           String?
+  captainName           String?
+  secretaryName         String?
+  treasurerName         String?
+  skChairpersonName     String?
+  officialHeaderLine1   String?
+  officialHeaderLine2   String?
+  officialHeaderLine3   String?
+  certificateFooterNote String?
+  logoUrl               String?
+  sealUrl               String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  barangay              Barangay @relation(fields: [barangayId], references: [id], onDelete: Cascade)
 }
 
 model AuditLog {
