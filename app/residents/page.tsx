@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { Prisma } from "@prisma/client";
-import { Plus, Search } from "lucide-react";
+import { FileUp, Plus, Search } from "lucide-react";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { ResidentAccessNotice } from "@/components/residents/access-notice";
+import { auth } from "@/auth";
 import { softDeleteResident } from "./actions";
 import { prisma } from "@/lib/prisma";
 import { getResidentAccessMessage, requireResidentBarangayId } from "@/lib/residents/access";
+import { canImportResidents } from "@/lib/residents/import-access";
 import { calculateAge, formatResidentName } from "@/lib/residents/format";
 import { residentListFilterSchema } from "@/lib/validation/resident";
 
@@ -76,16 +78,26 @@ export default async function ResidentsPage({ searchParams }: ResidentsPageProps
       orderBy: { gender: "asc" },
     }),
   ]);
+  const session = await auth();
+  const canImport = canImportResidents(session?.user?.role);
 
   return (
     <DashboardShell>
       <ResidentPageFrame
         title="Resident Registry"
         action={
-          <Link href="/residents/new" className="inline-flex items-center gap-2 rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white">
-            <Plus className="h-4 w-4" aria-hidden="true" />
-            Add Resident
-          </Link>
+          <div className="flex flex-wrap items-center gap-3">
+            {canImport ? (
+              <Link href="/residents/import" className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+                <FileUp className="h-4 w-4" aria-hidden="true" />
+                Import Residents
+              </Link>
+            ) : null}
+            <Link href="/residents/new" className="inline-flex items-center gap-2 rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white">
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              Add Resident
+            </Link>
+          </div>
         }
       >
         <form className="rounded-md border border-slate-200 bg-white p-4 shadow-sm" action="/residents">
