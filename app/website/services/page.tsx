@@ -1,0 +1,86 @@
+import { DashboardShell } from "@/components/layout/dashboard-shell";
+import { PageHeader } from "@/components/ui/page-header";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { prisma } from "@/lib/prisma";
+import { canManageWebsiteContent, requireWebsiteSession } from "@/lib/website/access";
+import { savePublicService } from "../actions";
+
+export default async function WebsiteServicesPage() {
+  const session = await requireWebsiteSession();
+  const canManage = canManageWebsiteContent(session.role);
+  const services = await prisma.publicService.findMany({
+    where: { barangayId: session.barangayId },
+    orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
+  });
+
+  return (
+    <DashboardShell>
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
+        <PageHeader eyebrow="Website" title="Services" description="Manage public service descriptions, requirements, fees, and request links." />
+        {canManage ? <ServiceForm /> : <AccessNotice message="Staff can view services. Only admins and secretaries can edit them." />}
+        <section className="grid gap-4 xl:grid-cols-2">
+          {services.map((service) => (
+            <form key={service.id} action={savePublicService} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+              <input type="hidden" name="id" value={service.id} />
+              <ServiceFields service={service} disabled={!canManage} />
+              <div className="mt-4 flex items-center justify-between gap-3">
+                <StatusBadge tone={service.isPublished ? "success" : "neutral"}>{service.isPublished ? "Published" : "Hidden"}</StatusBadge>
+                {canManage ? <button className="rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white">Save</button> : null}
+              </div>
+            </form>
+          ))}
+        </section>
+      </div>
+    </DashboardShell>
+  );
+}
+
+function ServiceForm() {
+  return (
+    <form action={savePublicService} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <h2 className="text-base font-semibold text-slate-950">Add service</h2>
+      <ServiceFields />
+      <button className="mt-4 rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">Add Service</button>
+    </form>
+  );
+}
+
+function ServiceFields({ service, disabled }: { service?: { name: string; description: string; requirements: string | null; processingTime: string | null; feeText: string | null; requestLink: string | null; displayOrder: number; isPublished: boolean }; disabled?: boolean }) {
+  return (
+    <div className="mt-4 grid gap-3 md:grid-cols-2">
+      <Field label="Service name" name="name" defaultValue={service?.name} required disabled={disabled} />
+      <Field label="Processing time" name="processingTime" defaultValue={service?.processingTime} disabled={disabled} />
+      <Field label="Fee text" name="feeText" defaultValue={service?.feeText} disabled={disabled} />
+      <Field label="Request link" name="requestLink" defaultValue={service?.requestLink} disabled={disabled} />
+      <Field label="Display order" name="displayOrder" type="number" defaultValue={String(service?.displayOrder ?? 0)} disabled={disabled} />
+      <label className="flex h-11 items-center gap-3 rounded-md border border-slate-200 px-3 text-sm text-slate-700">
+        <input type="checkbox" name="isPublished" defaultChecked={service?.isPublished ?? true} disabled={disabled} />
+        Show on website
+      </label>
+      <TextArea label="Description" name="description" defaultValue={service?.description} required disabled={disabled} />
+      <TextArea label="Requirements" name="requirements" defaultValue={service?.requirements} disabled={disabled} />
+    </div>
+  );
+}
+
+function Field({ label, name, defaultValue, type = "text", required, disabled }: { label: string; name: string; defaultValue?: string | null; type?: string; required?: boolean; disabled?: boolean }) {
+  return (
+    <label className="block">
+      <span className="text-sm font-medium text-slate-700">{label}</span>
+      <input name={name} type={type} defaultValue={defaultValue ?? ""} required={required} disabled={disabled} className="mt-1 h-11 w-full rounded-md border border-slate-200 px-3 text-sm" />
+    </label>
+  );
+}
+
+function TextArea({ label, name, defaultValue, required, disabled }: { label: string; name: string; defaultValue?: string | null; required?: boolean; disabled?: boolean }) {
+  return (
+    <label className="block md:col-span-2">
+      <span className="text-sm font-medium text-slate-700">{label}</span>
+      <textarea name={name} defaultValue={defaultValue ?? ""} required={required} disabled={disabled} rows={4} className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm" />
+    </label>
+  );
+}
+
+function AccessNotice({ message }: { message: string }) {
+  return <div className="rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">{message}</div>;
+}

@@ -23,7 +23,7 @@ export default async function EditWebsiteAnnouncementPage({ params }: Props) {
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
         <PageHeader eyebrow="Website" title="Edit Announcement" description="Update the public post residents see." />
         {canManageWebsiteContent(session.role) ? (
-          <AnnouncementForm action={updateAnnouncement.bind(null, id)} announcement={announcement} mode="edit" cancelHref="/website/announcements" />
+          <AnnouncementForm action={updateAnnouncement.bind(null, id)} announcement={announcement} mode="edit" cancelHref="/website/announcements" redirectBase="/website/announcements" />
         ) : (
           <AccessNotice message="Only admins and secretaries can edit website posts." />
         )}

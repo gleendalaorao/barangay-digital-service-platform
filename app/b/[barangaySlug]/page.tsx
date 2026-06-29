@@ -23,6 +23,16 @@ export default async function PublicBarangayPage({ params }: PublicBarangayPageP
         orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
         take: 5,
       },
+      publicServices: {
+        where: { isPublished: true },
+        orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
+        take: 6,
+      },
+      publicOfficials: {
+        where: { isPublished: true },
+        orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
+        take: 6,
+      },
     },
   });
 
@@ -33,7 +43,7 @@ export default async function PublicBarangayPage({ params }: PublicBarangayPageP
   const displayName = formatBarangayDisplayName(barangay.name);
 
   return (
-    <PublicShell barangayName={displayName}>
+    <PublicShell barangayName={displayName} slug={barangay.slug}>
       <section className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12">
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
@@ -42,9 +52,9 @@ export default async function PublicBarangayPage({ params }: PublicBarangayPageP
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium uppercase tracking-[0.16em] text-emerald-700">Online Citizen Services</p>
-              <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{displayName}</h1>
+              <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{barangay.settings?.welcomeTitle || displayName}</h1>
               <p className="mt-2 text-slate-500">
-                {barangay.municipality}, {barangay.province}
+                {barangay.settings?.welcomeMessage || `${barangay.municipality}, ${barangay.province}`}
               </p>
             </div>
           </div>
@@ -75,16 +85,48 @@ export default async function PublicBarangayPage({ params }: PublicBarangayPageP
         </div>
 
         <section>
-          <h2 className="text-lg font-semibold text-slate-950">Available Online Services</h2>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-lg font-semibold text-slate-950">Services</h2>
+            <Link href={`/b/${barangay.slug}/services`} className="text-sm font-medium text-emerald-700">View all</Link>
+          </div>
+          <p className="mt-1 text-sm text-slate-500">{barangay.settings?.publicServiceTagline || "Common barangay services available to residents."}</p>
           <div className="mt-4 grid gap-4 md:grid-cols-3">
-            {Object.values(CertificateType).map((type) => (
-              <div key={type} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-                <h3 className="font-semibold text-slate-950">{formatCertificateType(type)} request</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Submit a request online for barangay staff review and approval.
-                </p>
-              </div>
-            ))}
+            {barangay.publicServices.length === 0 ? (
+              Object.values(CertificateType).map((type) => (
+                <div key={type} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                  <h3 className="font-semibold text-slate-950">{formatCertificateType(type)} request</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">Submit a request online for barangay staff review and approval.</p>
+                </div>
+              ))
+            ) : (
+              barangay.publicServices.map((service) => (
+                <div key={service.id} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                  <h3 className="font-semibold text-slate-950">{service.name}</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">{service.description}</p>
+                  {service.requestLink ? <Link href={service.requestLink} className="mt-3 inline-block text-sm font-medium text-emerald-700">Start request</Link> : null}
+                </div>
+              ))
+            )}
+          </div>
+        </section>
+
+        <section>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-lg font-semibold text-slate-950">Officials</h2>
+            <Link href={`/b/${barangay.slug}/officials`} className="text-sm font-medium text-emerald-700">View all</Link>
+          </div>
+          <div className="mt-4 grid gap-4 md:grid-cols-3">
+            {barangay.publicOfficials.length === 0 ? (
+              <div className="rounded-lg border border-slate-200 bg-white p-5 text-sm text-slate-500 shadow-sm md:col-span-3">Officials will be posted soon.</div>
+            ) : (
+              barangay.publicOfficials.map((official) => (
+                <div key={official.id} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                  <h3 className="font-semibold text-slate-950">{official.name}</h3>
+                  <p className="mt-1 text-sm text-emerald-700">{official.position}</p>
+                  {official.contact ? <p className="mt-2 text-sm text-slate-500">{official.contact}</p> : null}
+                </div>
+              ))
+            )}
           </div>
         </section>
 
@@ -115,21 +157,29 @@ export default async function PublicBarangayPage({ params }: PublicBarangayPageP
               ))
             )}
           </div>
+          <Link href={`/b/${barangay.slug}/announcements`} className="mt-4 inline-block text-sm font-medium text-emerald-700">View all announcements</Link>
         </section>
       </section>
     </PublicShell>
   );
 }
 
-function PublicShell({ barangayName, children }: { barangayName: string; children: React.ReactNode }) {
+function PublicShell({ barangayName, slug, children }: { barangayName: string; slug: string; children: React.ReactNode }) {
   return (
     <main className="min-h-screen bg-slate-50">
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6">
-          <Link href="/" className="text-sm font-semibold text-ink-900">
+          <Link href={`/b/${slug}`} className="text-sm font-semibold text-ink-900">
             {barangayName}
           </Link>
-          <span className="text-xs font-medium uppercase tracking-[0.16em] text-brand-700">Public Portal</span>
+          <nav className="hidden items-center gap-4 text-sm font-medium text-slate-600 sm:flex">
+            <Link href={`/b/${slug}`}>Home</Link>
+            <Link href={`/b/${slug}/announcements`}>Announcements</Link>
+            <Link href={`/b/${slug}/services`}>Services</Link>
+            <Link href={`/b/${slug}/officials`}>Officials</Link>
+            <Link href={`/b/${slug}/contact`}>Contact</Link>
+          </nav>
+          <span className="text-xs font-medium uppercase tracking-[0.16em] text-brand-700">Public Website</span>
         </div>
       </header>
       {children}

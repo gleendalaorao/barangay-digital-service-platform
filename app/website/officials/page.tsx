@@ -1,0 +1,75 @@
+import { DashboardShell } from "@/components/layout/dashboard-shell";
+import { PageHeader } from "@/components/ui/page-header";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { prisma } from "@/lib/prisma";
+import { canManageWebsiteContent, requireWebsiteSession } from "@/lib/website/access";
+import { savePublicOfficial } from "../actions";
+
+export default async function WebsiteOfficialsPage() {
+  const session = await requireWebsiteSession();
+  const canManage = canManageWebsiteContent(session.role);
+  const officials = await prisma.publicOfficial.findMany({
+    where: { barangayId: session.barangayId },
+    orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
+  });
+
+  return (
+    <DashboardShell>
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
+        <PageHeader eyebrow="Website" title="Officials" description="Manage the officials shown on the public website." />
+        {canManage ? <OfficialForm /> : <AccessNotice message="Staff can view officials. Only admins and secretaries can edit them." />}
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {officials.map((official) => (
+            <form key={official.id} action={savePublicOfficial} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+              <input type="hidden" name="id" value={official.id} />
+              <OfficialFields official={official} disabled={!canManage} />
+              <div className="mt-4 flex items-center justify-between gap-3">
+                <StatusBadge tone={official.isPublished ? "success" : "neutral"}>{official.isPublished ? "Published" : "Hidden"}</StatusBadge>
+                {canManage ? <button className="rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white">Save</button> : null}
+              </div>
+            </form>
+          ))}
+        </section>
+      </div>
+    </DashboardShell>
+  );
+}
+
+function OfficialForm() {
+  return (
+    <form action={savePublicOfficial} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <h2 className="text-base font-semibold text-slate-950">Add official</h2>
+      <OfficialFields />
+      <button className="mt-4 rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">Add Official</button>
+    </form>
+  );
+}
+
+function OfficialFields({ official, disabled }: { official?: { name: string; position: string; contact: string | null; photoUrl: string | null; displayOrder: number; isPublished: boolean }; disabled?: boolean }) {
+  return (
+    <div className="mt-4 grid gap-3 md:grid-cols-2">
+      <Field label="Name" name="name" defaultValue={official?.name} required disabled={disabled} />
+      <Field label="Position" name="position" defaultValue={official?.position} required disabled={disabled} />
+      <Field label="Contact" name="contact" defaultValue={official?.contact} disabled={disabled} />
+      <Field label="Photo URL" name="photoUrl" defaultValue={official?.photoUrl} disabled={disabled} />
+      <Field label="Display order" name="displayOrder" type="number" defaultValue={String(official?.displayOrder ?? 0)} disabled={disabled} />
+      <label className="flex h-11 items-center gap-3 rounded-md border border-slate-200 px-3 text-sm text-slate-700">
+        <input type="checkbox" name="isPublished" defaultChecked={official?.isPublished ?? true} disabled={disabled} />
+        Show on website
+      </label>
+    </div>
+  );
+}
+
+function Field({ label, name, defaultValue, type = "text", required, disabled }: { label: string; name: string; defaultValue?: string | null; type?: string; required?: boolean; disabled?: boolean }) {
+  return (
+    <label className="block">
+      <span className="text-sm font-medium text-slate-700">{label}</span>
+      <input name={name} type={type} defaultValue={defaultValue ?? ""} required={required} disabled={disabled} className="mt-1 h-11 w-full rounded-md border border-slate-200 px-3 text-sm" />
+    </label>
+  );
+}
+
+function AccessNotice({ message }: { message: string }) {
+  return <div className="rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">{message}</div>;
+}

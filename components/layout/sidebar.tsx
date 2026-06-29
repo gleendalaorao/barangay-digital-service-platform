@@ -50,6 +50,7 @@ const navigationGroups = [
     label: "Barangay",
     items: [
       { name: "Announcements", href: "/announcements", icon: Megaphone },
+      { name: "Website", href: "/website", icon: Megaphone },
       { name: "Settings", href: "/settings/barangay", icon: Settings },
       { name: "Backup & Restore", href: "/settings/backup", icon: DatabaseBackup },
     ],

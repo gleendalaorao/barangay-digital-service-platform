@@ -7,11 +7,13 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatDateTime } from "@/lib/certificates/format";
 import { prisma } from "@/lib/prisma";
-import { canManageWebsiteContent, requireWebsiteSession } from "@/lib/website/access";
+import { canManageWebsiteContent, canPublishWebsiteContent, requireWebsiteSession } from "@/lib/website/access";
+import { setAnnouncementPublished } from "@/app/announcements/actions";
 
 export default async function WebsiteAnnouncementsPage() {
   const session = await requireWebsiteSession();
   const canManage = canManageWebsiteContent(session.role);
+  const canPublish = canPublishWebsiteContent(session.role);
   const announcements = await prisma.announcement.findMany({
     where: { barangayId: session.barangayId },
     orderBy: [{ createdAt: "desc" }],
@@ -64,9 +66,18 @@ export default async function WebsiteAnnouncementsPage() {
                     </td>
                     <td className="text-slate-700">{formatDateTime(announcement.publishedAt)}</td>
                     <td>
-                      <Link href={`/website/announcements/${announcement.id}/edit`} className="font-medium text-emerald-700">
-                        Edit
-                      </Link>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <Link href={`/website/announcements/${announcement.id}/edit`} className="font-medium text-emerald-700">
+                          Edit
+                        </Link>
+                        {canPublish ? (
+                          <form action={setAnnouncementPublished.bind(null, announcement.id, !announcement.isPublished)}>
+                            <button type="submit" className="font-medium text-blue-700">
+                              {announcement.isPublished ? "Unpublish" : "Publish"}
+                            </button>
+                          </form>
+                        ) : null}
+                      </div>
                     </td>
                   </tr>
                 ))

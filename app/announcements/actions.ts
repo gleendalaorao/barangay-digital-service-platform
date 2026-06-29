@@ -30,6 +30,7 @@ function parseAnnouncementForm(formData: FormData) {
     attachmentUrl: parsed.attachmentUrl || null,
     publishedAt: parsed.publishedAt,
     isPublished: parsed.isPublished,
+    redirectBase: String(formData.get("redirectBase") ?? "/announcements"),
   };
 }
 
@@ -68,7 +69,7 @@ export async function createAnnouncement(formData: FormData) {
   });
 
   revalidateAnnouncements();
-  redirect(`/announcements/${announcement.id}/edit?created=1`);
+  redirect(`${parsed.redirectBase}/${announcement.id}/edit?created=1`);
 }
 
 export async function updateAnnouncement(id: string, formData: FormData) {
@@ -130,7 +131,7 @@ export async function updateAnnouncement(id: string, formData: FormData) {
   }
 
   revalidateAnnouncements(id);
-  redirect(`/announcements/${id}/edit?updated=1`);
+  redirect(`${parsed.redirectBase}/${id}/edit?updated=1`);
 }
 
 export async function setAnnouncementPublished(id: string, publish: boolean) {

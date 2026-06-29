@@ -13,6 +13,7 @@ const protectedPathPrefixes = [
   "/resident-verifications",
   "/settings",
   "/users",
+  "/website",
 ];
 
 function hasSessionCookie(request: NextRequest) {

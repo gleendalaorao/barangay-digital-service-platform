@@ -6,11 +6,13 @@ type AnnouncementFormProps = {
   action: (formData: FormData) => void | Promise<void>;
   mode: "create" | "edit";
   cancelHref?: string;
+  redirectBase?: string;
 };
 
-export function AnnouncementForm({ announcement, action, mode, cancelHref = "/announcements" }: AnnouncementFormProps) {
+export function AnnouncementForm({ announcement, action, mode, cancelHref = "/announcements", redirectBase = "/announcements" }: AnnouncementFormProps) {
   return (
     <form action={action} className="space-y-6">
+      <input type="hidden" name="redirectBase" value={redirectBase} />
       <SectionCard
         title="What would you like to announce?"
         description="Post a clear public update for residents, like writing a simple social media announcement."
