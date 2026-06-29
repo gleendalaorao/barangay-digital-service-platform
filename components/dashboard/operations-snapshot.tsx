@@ -1,23 +1,54 @@
-import type { DashboardMetric } from "@/lib/dashboard/data";
+import type { TodayWorkload } from "@/lib/dashboard/data";
 import { StatCard } from "@/components/ui/stat-card";
-import { Award, FileClock, Home, Inbox, Send, UserPlus, Users } from "lucide-react";
+import { CheckCircle2, FileClock, Inbox, PackageCheck } from "lucide-react";
 
-const icons = [Users, Home, Award, FileClock, Send, Inbox, Award, UserPlus];
-const tones = ["emerald", "blue", "gold", "warning", "blue", "gold", "emerald", "blue"] as const;
+export function OperationsSnapshot({ workload }: { workload: TodayWorkload }) {
+  const metrics = [
+    {
+      label: "Pending public requests",
+      value: workload.pendingPublicRequests,
+      helper: "Submitted, reviewing, info needed, or for approval",
+      icon: Inbox,
+      tone: "gold" as const,
+    },
+    {
+      label: "Certificates pending approval",
+      value: workload.certificatesPendingApproval,
+      helper: "Certificate records waiting for approval",
+      icon: FileClock,
+      tone: "gold" as const,
+    },
+    {
+      label: "Certificates released today",
+      value: workload.certificatesReleasedToday,
+      helper: "Released date is today",
+      icon: CheckCircle2,
+      tone: "emerald" as const,
+    },
+    {
+      label: "Requests ready for pickup",
+      value: workload.requestsReadyForPickup,
+      helper: "Public requests marked ready for pickup",
+      icon: PackageCheck,
+      tone: "blue" as const,
+    },
+  ];
 
-export function OperationsSnapshot({ metrics }: { metrics: DashboardMetric[] }) {
   return (
-    <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      {metrics.map((item, index) => (
+    <section>
+      <h2 className="mb-4 text-lg font-semibold text-slate-950">Today's Workload</h2>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {metrics.map((item) => (
         <StatCard
           key={item.label}
           label={item.label}
           value={item.value}
           helper={item.helper}
-          icon={icons[index]}
-          tone={tones[index] === "warning" ? "gold" : tones[index]}
+          icon={item.icon}
+          tone={item.tone}
         />
       ))}
+      </div>
     </section>
   );
 }

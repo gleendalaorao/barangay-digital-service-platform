@@ -10,7 +10,11 @@ export type DashboardData =
   | {
       kind: "barangay";
       barangayName: string;
-      metrics: DashboardMetric[];
+      barangaySlug: string;
+      workload: TodayWorkload;
+      residentInsights: ResidentInsights;
+      certificateInsights: CertificateInsights;
+      publicRequestInsights: PublicRequestInsights;
       latestCertificates: LatestCertificate[];
       latestPublicRequests: LatestPublicRequest[];
     };
@@ -19,6 +23,52 @@ export type DashboardMetric = {
   label: string;
   value: number;
   helper: string;
+};
+
+export type TodayWorkload = {
+  pendingPublicRequests: number;
+  certificatesPendingApproval: number;
+  certificatesReleasedToday: number;
+  requestsReadyForPickup: number;
+};
+
+export type ResidentInsights = {
+  birthdaysToday: ResidentBirthday[];
+  residentsAddedThisMonth: number;
+  seniorsCount: number;
+  residentsByPurok: PurokSummary[];
+};
+
+export type ResidentBirthday = {
+  id: string;
+  name: string;
+  age: number | null;
+  purok: string | null;
+};
+
+export type PurokSummary = {
+  purok: string;
+  count: number;
+};
+
+export type CertificateInsights = {
+  mostRequestedTypeThisMonth: {
+    type: CertificateType;
+    count: number;
+  } | null;
+  certificatesByStatus: StatusSummary<CertificateStatus>[];
+  certificateVolumeThisMonth: number;
+};
+
+export type PublicRequestInsights = {
+  onlineRequestsToday: number;
+  requestsNeedingAction: number;
+  readyForRelease: number;
+};
+
+export type StatusSummary<TStatus extends string> = {
+  status: TStatus;
+  count: number;
 };
 
 export type LatestCertificate = {
@@ -59,36 +109,41 @@ export async function getDashboardData(): Promise<DashboardData> {
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const startOfTomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const seniorBirthDateCutoff = new Date(now.getFullYear() - 60, now.getMonth(), now.getDate());
 
   const [
     barangay,
-    activeResidents,
-    activeHouseholds,
-    certificatesIssuedToday,
+    pendingPublicRequests,
     certificatesPendingApproval,
-    publicRequestsSubmittedToday,
-    publicRequestsNeedingAction,
-    certificatesReleasedThisMonth,
+    certificatesReleasedToday,
+    requestsReadyForPickup,
+    birthdayCandidates,
     residentsAddedThisMonth,
+    seniorsCount,
+    residentsByPurok,
+    certificateTypeCountsThisMonth,
+    certificatesByStatus,
+    certificateVolumeThisMonth,
+    onlineRequestsToday,
+    requestsNeedingAction,
+    readyForRelease,
     latestCertificates,
     latestPublicRequests,
   ] = await Promise.all([
     prisma.barangay.findUnique({
       where: { id: barangayId },
-      select: { name: true },
+      select: { name: true, slug: true },
     }),
-    prisma.resident.count({
-      where: { barangayId, isActive: true },
-    }),
-    prisma.household.count({
-      where: { barangayId, isActive: true },
-    }),
-    prisma.certificateRequest.count({
+    prisma.publicDocumentRequest.count({
       where: {
         barangayId,
-        issuedAt: {
-          gte: startOfToday,
-          lt: startOfTomorrow,
+        status: {
+          in: [
+            PublicRequestStatus.SUBMITTED,
+            PublicRequestStatus.UNDER_REVIEW,
+            PublicRequestStatus.NEEDS_MORE_INFO,
+            PublicRequestStatus.FOR_APPROVAL,
+          ],
         },
       },
     }),
@@ -96,6 +151,108 @@ export async function getDashboardData(): Promise<DashboardData> {
       where: {
         barangayId,
         status: CertificateStatus.PENDING_APPROVAL,
+      },
+    }),
+    prisma.certificateRequest.count({
+      where: {
+        barangayId,
+        status: CertificateStatus.RELEASED,
+        releasedAt: {
+          gte: startOfToday,
+          lt: startOfTomorrow,
+        },
+      },
+    }),
+    prisma.publicDocumentRequest.count({
+      where: {
+        barangayId,
+        status: PublicRequestStatus.READY_FOR_PICKUP,
+      },
+    }),
+    prisma.resident.findMany({
+      where: {
+        barangayId,
+        isActive: true,
+        birthDate: {
+          not: null,
+        },
+      },
+      select: {
+        id: true,
+        firstName: true,
+        middleName: true,
+        lastName: true,
+        suffix: true,
+        birthDate: true,
+        purok: true,
+      },
+    }),
+    prisma.resident.count({
+      where: {
+        barangayId,
+        createdAt: {
+          gte: startOfMonth,
+        },
+      },
+    }),
+    prisma.resident.count({
+      where: {
+        barangayId,
+        isActive: true,
+        birthDate: {
+          lte: seniorBirthDateCutoff,
+        },
+      },
+    }),
+    prisma.resident.groupBy({
+      by: ["purok"],
+      where: {
+        barangayId,
+        isActive: true,
+      },
+      _count: {
+        _all: true,
+      },
+      orderBy: {
+        _count: {
+          purok: "desc",
+        },
+      },
+      take: 8,
+    }),
+    prisma.certificateRequest.groupBy({
+      by: ["certificateType"],
+      where: {
+        barangayId,
+        createdAt: {
+          gte: startOfMonth,
+        },
+      },
+      _count: {
+        _all: true,
+      },
+      orderBy: {
+        _count: {
+          certificateType: "desc",
+        },
+      },
+    }),
+    prisma.certificateRequest.groupBy({
+      by: ["status"],
+      where: { barangayId },
+      _count: {
+        _all: true,
+      },
+      orderBy: {
+        status: "asc",
+      },
+    }),
+    prisma.certificateRequest.count({
+      where: {
+        barangayId,
+        createdAt: {
+          gte: startOfMonth,
+        },
       },
     }),
     prisma.publicDocumentRequest.count({
@@ -120,20 +277,11 @@ export async function getDashboardData(): Promise<DashboardData> {
         },
       },
     }),
-    prisma.certificateRequest.count({
+    prisma.publicDocumentRequest.count({
       where: {
         barangayId,
-        status: CertificateStatus.RELEASED,
-        releasedAt: {
-          gte: startOfMonth,
-        },
-      },
-    }),
-    prisma.resident.count({
-      where: {
-        barangayId,
-        createdAt: {
-          gte: startOfMonth,
+        status: {
+          in: [PublicRequestStatus.READY_FOR_PICKUP, PublicRequestStatus.READY_FOR_DOWNLOAD],
         },
       },
     }),
@@ -172,19 +320,61 @@ export async function getDashboardData(): Promise<DashboardData> {
     }),
   ]);
 
+  const birthdaysToday = birthdayCandidates
+    .filter((resident) => {
+      if (!resident.birthDate) {
+        return false;
+      }
+
+      return resident.birthDate.getMonth() === now.getMonth() && resident.birthDate.getDate() === now.getDate();
+    })
+    .map((resident) => ({
+      id: resident.id,
+      name: [resident.firstName, resident.middleName, resident.lastName, resident.suffix].filter(Boolean).join(" "),
+      age: resident.birthDate ? now.getFullYear() - resident.birthDate.getFullYear() : null,
+      purok: resident.purok,
+    }))
+    .slice(0, 6);
+
+  const mostRequestedTypeThisMonth = certificateTypeCountsThisMonth[0]
+    ? {
+        type: certificateTypeCountsThisMonth[0].certificateType,
+        count: certificateTypeCountsThisMonth[0]._count._all,
+      }
+    : null;
+
   return {
     kind: "barangay",
     barangayName: barangay?.name ?? "Barangay Workspace",
-    metrics: [
-      { label: "Total active residents", value: activeResidents, helper: "Residents currently marked active" },
-      { label: "Total active households", value: activeHouseholds, helper: "Households currently marked active" },
-      { label: "Certificates issued today", value: certificatesIssuedToday, helper: "Issued date is today" },
-      { label: "Certificates pending approval", value: certificatesPendingApproval, helper: "Waiting for captain/admin approval" },
-      { label: "Public requests submitted today", value: publicRequestsSubmittedToday, helper: "Citizen portal requests today" },
-      { label: "Public requests needing action", value: publicRequestsNeedingAction, helper: "Submitted, reviewing, info needed, or for approval" },
-      { label: "Certificates released this month", value: certificatesReleasedThisMonth, helper: "Released since the first day of this month" },
-      { label: "Residents added this month", value: residentsAddedThisMonth, helper: "New resident records this month" },
-    ],
+    barangaySlug: barangay?.slug ?? "",
+    workload: {
+      pendingPublicRequests,
+      certificatesPendingApproval,
+      certificatesReleasedToday,
+      requestsReadyForPickup,
+    },
+    residentInsights: {
+      birthdaysToday,
+      residentsAddedThisMonth,
+      seniorsCount,
+      residentsByPurok: residentsByPurok.map((item) => ({
+        purok: item.purok ?? "Unassigned",
+        count: item._count._all,
+      })),
+    },
+    certificateInsights: {
+      mostRequestedTypeThisMonth,
+      certificatesByStatus: certificatesByStatus.map((item) => ({
+        status: item.status,
+        count: item._count._all,
+      })),
+      certificateVolumeThisMonth,
+    },
+    publicRequestInsights: {
+      onlineRequestsToday,
+      requestsNeedingAction,
+      readyForRelease,
+    },
     latestCertificates,
     latestPublicRequests,
   };

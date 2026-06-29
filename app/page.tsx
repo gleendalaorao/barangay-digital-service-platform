@@ -1,5 +1,6 @@
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { DashboardActionGrid } from "@/components/dashboard/dashboard-action-grid";
+import { DashboardInsights } from "@/components/dashboard/dashboard-insights";
 import { OperationsSnapshot } from "@/components/dashboard/operations-snapshot";
 import { RecentActivity } from "@/components/dashboard/recent-activity";
 import { getDashboardData } from "@/lib/dashboard/data";
@@ -36,10 +37,15 @@ export default async function DashboardPage() {
           </section>
         ) : (
           <>
-            <OperationsSnapshot metrics={dashboard.metrics} />
+            <OperationsSnapshot workload={dashboard.workload} />
+            <DashboardInsights
+              residentInsights={dashboard.residentInsights}
+              certificateInsights={dashboard.certificateInsights}
+              publicRequestInsights={dashboard.publicRequestInsights}
+            />
             <div>
               <h2 className="mb-4 text-lg font-semibold text-slate-950">Quick Actions</h2>
-              <DashboardActionGrid />
+              <DashboardActionGrid publicPortalHref={`/b/${dashboard.barangaySlug}`} />
             </div>
             <RecentActivity
               certificates={dashboard.latestCertificates}
