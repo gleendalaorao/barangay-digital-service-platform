@@ -1,0 +1,259 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  SECRETARY
+  CAPTAIN
+  STAFF
+}
+
+enum CertificateType {
+  BARANGAY_CLEARANCE
+  RESIDENCY
+  INDIGENCY
+}
+
+enum CertificateStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  RELEASED
+  CANCELLED
+}
+
+enum PublicRequestStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  NEEDS_MORE_INFO
+  FOR_APPROVAL
+  APPROVED
+  READY_FOR_PICKUP
+  READY_FOR_DOWNLOAD
+  RELEASED
+  REJECTED
+  CANCELLED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  TRIAL
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+}
+
+model Barangay {
+  id                  String                  @id @default(cuid())
+  name                String
+  municipality        String
+  province            String
+  region              String
+  slug                String                  @unique
+  contactEmail        String?
+  contactNumber       String?
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+  settings            BarangaySetting?
+  users               User[]
+  households          Household[]
+  residents           Resident[]
+  certificateRequests CertificateRequest[]
+  publicRequests      PublicDocumentRequest[]
+  auditLogs           AuditLog[]
+  subscriptions       Subscription[]
+}
+
+model SubscriptionPlan {
+  id            String         @id @default(cuid())
+  code          String         @unique
+  name          String
+  description   String?
+  monthlyPrice  Decimal        @db.Decimal(10, 2)
+  maxUsers      Int?
+  maxResidents  Int?
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id          String             @id @default(cuid())
+  barangayId  String
+  planId      String
+  status      SubscriptionStatus @default(TRIAL)
+  startedAt   DateTime           @default(now())
+  expiresAt   DateTime?
+  cancelledAt DateTime?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  barangay    Barangay           @relation(fields: [barangayId], references: [id], onDelete: Cascade)
+  plan        SubscriptionPlan   @relation(fields: [planId], references: [id])
+
+  @@index([barangayId])
+  @@index([planId])
+}
+
+model User {
+  id            String    @id @default(cuid())
+  barangayId    String?
+  name          String
+  email         String    @unique
+  passwordHash  String
+  role          Role      @default(STAFF)
+  isActive      Boolean   @default(true)
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  barangay      Barangay? @relation(fields: [barangayId], references: [id], onDelete: SetNull)
+  auditLogs     AuditLog[]
+  certificateRequests CertificateRequest[] @relation("CertificateRequestedBy")
+  approvedCertificates CertificateRequest[] @relation("CertificateApprovedBy")
+
+  @@index([barangayId])
+  @@index([role])
+}
+
+model Household {
+  id              String     @id @default(cuid())
+  barangayId      String
+  headResidentId  String?
+  householdNo     String
+  addressLine     String
+  addressBarangay String?
+  city            String?
+  province        String?
+  purok           String?
+  isActive        Boolean    @default(true)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  barangay        Barangay   @relation(fields: [barangayId], references: [id], onDelete: Cascade)
+  headResident    Resident?  @relation("HouseholdHead", fields: [headResidentId], references: [id], onDelete: SetNull)
+  residents       Resident[] @relation("HouseholdMembers")
+
+  @@unique([barangayId, householdNo])
+  @@index([barangayId])
+  @@index([headResidentId])
+}
+
+model Resident {
+  id               String    @id @default(cuid())
+  barangayId       String
+  householdId      String?
+  firstName        String
+  middleName       String?
+  lastName         String
+  suffix           String?
+  birthDate        DateTime?
+  gender           String?
+  civilStatus      String?
+  contactNumber    String?
+  occupation       String?
+  citizenship      String       @default("Filipino")
+  addressLine      String
+  addressBarangay  String?
+  city             String?
+  province         String?
+  purok            String?
+  isActive         Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  barangay         Barangay  @relation(fields: [barangayId], references: [id], onDelete: Cascade)
+  household        Household? @relation("HouseholdMembers", fields: [householdId], references: [id], onDelete: SetNull)
+  headedHouseholds Household[] @relation("HouseholdHead")
+  certificateRequests CertificateRequest[]
+  publicRequests   PublicDocumentRequest[]
+
+  @@index([barangayId])
+  @@index([householdId])
+  @@index([lastName, firstName])
+}
+
+model CertificateRequest {
+  id             String            @id @default(cuid())
+  barangayId     String
+  residentId     String?
+  requestedById  String?
+  approvedById   String?
+  certificateType CertificateType
+  status         CertificateStatus @default(DRAFT)
+  purpose        String?
+  controlNumber  String?
+  issuedAt       DateTime?
+  releasedAt     DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  barangay       Barangay          @relation(fields: [barangayId], references: [id], onDelete: Cascade)
+  resident       Resident?         @relation(fields: [residentId], references: [id], onDelete: SetNull)
+  requestedBy    User?             @relation("CertificateRequestedBy", fields: [requestedById], references: [id], onDelete: SetNull)
+  approvedBy     User?             @relation("CertificateApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+
+  @@unique([barangayId, controlNumber])
+  @@index([barangayId])
+  @@index([residentId])
+  @@index([status])
+}
+
+model PublicDocumentRequest {
+  id              String              @id @default(cuid())
+  barangayId      String
+  residentId      String?
+  requesterName   String
+  requesterEmail  String?
+  requesterMobile String
+  certificateType CertificateType
+  status          PublicRequestStatus @default(SUBMITTED)
+  purpose         String?
+  trackingCode    String              @unique
+  submittedAt     DateTime            @default(now())
+  reviewedAt      DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  barangay        Barangay            @relation(fields: [barangayId], references: [id], onDelete: Cascade)
+  resident        Resident?           @relation(fields: [residentId], references: [id], onDelete: SetNull)
+
+  @@index([barangayId])
+  @@index([residentId])
+  @@index([status])
+}
+
+model BarangaySetting {
+  id              String   @id @default(cuid())
+  barangayId      String   @unique
+  certificatePrefix String @default("BRGY")
+  releaseInstructions String?
+  officeAddress   String?
+  officeHours     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  barangay        Barangay @relation(fields: [barangayId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  barangayId String?
+  userId     String?
+  action     String
+  entity     String
+  entityId   String?
+  metadata   Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  barangay   Barangay? @relation(fields: [barangayId], references: [id], onDelete: Cascade)
+  user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([barangayId])
+  @@index([userId])
+  @@index([action])
+}
