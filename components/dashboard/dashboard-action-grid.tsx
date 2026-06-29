@@ -1,4 +1,4 @@
-import { BarChart3, BookOpenCheck, FilePlus2, Home, Inbox, Search, UserPlus } from "lucide-react";
+import { BookOpenCheck, FilePlus2, Inbox, Search, Settings, UserPlus } from "lucide-react";
 
 const actions = [
   {
@@ -26,22 +26,16 @@ const actions = [
     href: "/requests",
   },
   {
-    name: "Household Registry",
-    description: "Review household records and maintain resident membership.",
-    icon: Home,
-    href: "/households",
-  },
-  {
     name: "Certificate Logbook",
     description: "Track document status, release dates, and control numbers.",
     icon: BookOpenCheck,
     href: "/certificates",
   },
   {
-    name: "Reports",
-    description: "Prepare operational summaries for barangay leadership.",
-    icon: BarChart3,
-    href: "#",
+    name: "Barangay Settings",
+    description: "Update public identity, officials, and certificate header details.",
+    icon: Settings,
+    href: "/settings/barangay",
   },
 ];
 

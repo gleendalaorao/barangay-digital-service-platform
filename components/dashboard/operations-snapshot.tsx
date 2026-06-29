@@ -1,17 +1,13 @@
-const items = [
-  { label: "Resident records", value: "Ready" },
-  { label: "Certificate workflow", value: "Prepared" },
-  { label: "Public requests", value: "Queued" },
-  { label: "Tenant isolation", value: "Enabled" },
-];
+import type { DashboardMetric } from "@/lib/dashboard/data";
 
-export function OperationsSnapshot() {
+export function OperationsSnapshot({ metrics }: { metrics: DashboardMetric[] }) {
   return (
-    <section className="grid gap-4 border-y border-slate-200 py-6 sm:grid-cols-2 xl:grid-cols-4">
-      {items.map((item) => (
-        <div key={item.label}>
+    <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {metrics.map((item) => (
+        <div key={item.label} className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-sm text-ink-500">{item.label}</p>
-          <p className="mt-2 text-2xl font-semibold text-ink-900">{item.value}</p>
+          <p className="mt-2 text-3xl font-semibold text-ink-900">{item.value.toLocaleString()}</p>
+          <p className="mt-2 text-xs leading-5 text-ink-500">{item.helper}</p>
         </div>
       ))}
     </section>
