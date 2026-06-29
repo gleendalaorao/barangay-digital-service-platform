@@ -10,6 +10,7 @@ import {
   Inbox,
   LayoutDashboard,
   LogOut,
+  Megaphone,
   ScrollText,
   Settings,
   UserCircle,
@@ -42,7 +43,10 @@ const navigationGroups = [
   },
   {
     label: "Barangay",
-    items: [{ name: "Settings", href: "/settings/barangay", icon: Settings }],
+    items: [
+      { name: "Announcements", href: "/announcements", icon: Megaphone },
+      { name: "Settings", href: "/settings/barangay", icon: Settings },
+    ],
   },
   {
     label: "System",

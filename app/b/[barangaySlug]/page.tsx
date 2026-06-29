@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CertificateType } from "@prisma/client";
-import { Building2, Clock, FileText, Mail, Phone, Search } from "lucide-react";
+import { Building2, Clock, FileText, Mail, Megaphone, Phone, Search } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { formatCertificateType } from "@/lib/certificates/format";
+import { formatCertificateType, formatDate } from "@/lib/certificates/format";
 
 type PublicBarangayPageProps = {
   params: Promise<{ barangaySlug: string }>;
@@ -13,7 +13,16 @@ export default async function PublicBarangayPage({ params }: PublicBarangayPageP
   const { barangaySlug } = await params;
   const barangay = await prisma.barangay.findUnique({
     where: { slug: barangaySlug },
-    include: { settings: true },
+    include: {
+      settings: true,
+      announcements: {
+        where: {
+          isPublished: true,
+        },
+        orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
+        take: 5,
+      },
+    },
   });
 
   if (!barangay) {
@@ -65,6 +74,35 @@ export default async function PublicBarangayPage({ params }: PublicBarangayPageP
                 </p>
               </div>
             ))}
+          </div>
+        </section>
+
+        <section>
+          <div className="flex items-center gap-2">
+            <Megaphone className="h-5 w-5 text-emerald-700" aria-hidden="true" />
+            <h2 className="text-lg font-semibold text-slate-950">Barangay Announcements</h2>
+          </div>
+          <div className="mt-4 grid gap-4">
+            {barangay.announcements.length === 0 ? (
+              <div className="rounded-lg border border-slate-200 bg-white p-5 text-sm text-slate-500 shadow-sm">
+                No public announcements are available right now.
+              </div>
+            ) : (
+              barangay.announcements.map((announcement) => (
+                <article key={announcement.id} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
+                        {announcement.category || "Announcement"}
+                      </p>
+                      <h3 className="mt-2 font-semibold text-slate-950">{announcement.title}</h3>
+                    </div>
+                    <p className="whitespace-nowrap text-xs text-slate-500">{formatDate(announcement.publishedAt)}</p>
+                  </div>
+                  <p className="mt-3 whitespace-pre-line text-sm leading-6 text-slate-600">{announcement.body}</p>
+                </article>
+              ))
+            )}
           </div>
         </section>
       </section>
