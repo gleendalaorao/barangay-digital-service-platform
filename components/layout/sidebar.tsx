@@ -3,6 +3,7 @@
 import {
   BarChart3,
   BookOpenCheck,
+  Building2,
   ChevronLeft,
   ChevronRight,
   DatabaseBackup,
@@ -16,6 +17,7 @@ import {
   Settings,
   Users,
 } from "lucide-react";
+import type { Role } from "@prisma/client";
 import { signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -60,9 +62,40 @@ const navigationGroups = [
   },
 ];
 
-export function Sidebar() {
+const platformNavigationGroups = [
+  {
+    label: "Platform",
+    items: [
+      { name: "Platform Overview", href: "/platform", icon: LayoutDashboard },
+      { name: "Barangays", href: "/platform/barangays", icon: Building2 },
+    ],
+  },
+  {
+    label: "System",
+    items: [{ name: "Logout", href: "/logout", icon: LogOut }],
+  },
+];
+
+const platformWorkspaceGroup = {
+  label: "Workspace",
+  items: [
+    { name: "Tenant Dashboard", href: "/", icon: LayoutDashboard },
+    { name: "Residents", href: "/residents", icon: Users },
+    { name: "Certificates", href: "/certificates", icon: BookOpenCheck },
+    { name: "Requests", href: "/requests", icon: Inbox },
+    { name: "Exit Workspace", href: "/platform/workspace/exit", icon: LogOut },
+  ],
+};
+
+export function Sidebar({ role, hasWorkspace }: { role: Role | null; hasWorkspace: boolean }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const groups =
+    role === "SUPER_ADMIN"
+      ? hasWorkspace
+        ? [platformNavigationGroups[0], platformWorkspaceGroup, platformNavigationGroups[1]]
+        : platformNavigationGroups
+      : navigationGroups;
 
   return (
     <aside
@@ -94,7 +127,7 @@ export function Sidebar() {
           </button>
         </div>
         <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-5">
-          {navigationGroups.map((group) => (
+          {groups.map((group) => (
             <div key={group.label}>
               {!collapsed ? (
                 <p className="px-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">{group.label}</p>
@@ -119,6 +152,24 @@ export function Sidebar() {
                         <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
                         {!collapsed ? <span className="truncate">{item.name}</span> : null}
                       </button>
+                    );
+                  }
+
+                  if (item.name === "Exit Workspace") {
+                    return (
+                      <form key={item.name} action={item.href} method="post">
+                        <button
+                          type="submit"
+                          title={collapsed ? item.name : undefined}
+                          className={cn(
+                            "flex h-10 w-full items-center gap-3 rounded-md px-3 text-left text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-950",
+                            collapsed && "justify-center px-0",
+                          )}
+                        >
+                          <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+                          {!collapsed ? <span className="truncate">{item.name}</span> : null}
+                        </button>
+                      </form>
                     );
                   }
 

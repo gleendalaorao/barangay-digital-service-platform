@@ -118,6 +118,11 @@ async function main() {
   }
 
   const superAdmin = await login("superadmin@barangay-platform.local");
+  for (const route of ["/platform", "/platform/barangays"]) {
+    const status = await checkRoute(route, superAdmin.cookies);
+    console.log(`OK ${status} ${route} for superadmin`);
+  }
+
   const superAdminUsersText = await pageText("/users", superAdmin.cookies);
 
   if (!superAdminUsersText.includes("Select a barangay context before managing users.")) {

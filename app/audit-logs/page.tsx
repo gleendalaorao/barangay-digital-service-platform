@@ -4,13 +4,13 @@ import { DataTable } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { auth } from "@/auth";
 import { formatDateTime } from "@/lib/certificates/format";
 import { getAuditDescription } from "@/lib/audit";
+import { getEffectiveSession } from "@/lib/platform/workspace";
 import { prisma } from "@/lib/prisma";
 
 export default async function AuditLogsPage() {
-  const session = await auth();
+  const session = await getEffectiveSession();
   const barangayId = session?.user?.barangayId;
 
   if (!session?.user) {

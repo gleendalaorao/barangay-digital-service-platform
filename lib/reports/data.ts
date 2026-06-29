@@ -1,5 +1,5 @@
 import { CertificateStatus, CertificateType, PublicRequestStatus } from "@prisma/client";
-import { auth } from "@/auth";
+import { getEffectiveSession } from "@/lib/platform/workspace";
 import { prisma } from "@/lib/prisma";
 
 export type ReportData =
@@ -52,7 +52,7 @@ type PublicRequestSummary = {
 };
 
 export async function getReportData(): Promise<ReportData> {
-  const session = await auth();
+  const session = await getEffectiveSession();
 
   if (!session?.user?.barangayId) {
     return {

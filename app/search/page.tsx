@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { FileCheck2, Home, Inbox, Search, Users } from "lucide-react";
-import { auth } from "@/auth";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatCertificateStatus, formatCertificateType, formatDate, formatDateTime } from "@/lib/certificates/format";
 import { formatHouseholdAddress } from "@/lib/households/format";
+import { getEffectiveSession } from "@/lib/platform/workspace";
 import { prisma } from "@/lib/prisma";
 import { formatPublicRequesterName, formatPublicRequestStatus } from "@/lib/public-requests/format";
 import { formatResidentName } from "@/lib/residents/format";
@@ -33,7 +33,7 @@ const resultIcons = {
 export default async function SearchPage({ searchParams }: SearchPageProps) {
   const rawSearchParams = await searchParams;
   const query = toSingle(rawSearchParams.q)?.trim() ?? "";
-  const session = await auth();
+  const session = await getEffectiveSession();
   const barangayId = session?.user?.barangayId;
 
   if (!barangayId) {

@@ -1,12 +1,13 @@
 import { Bell, Menu } from "lucide-react";
-import { auth } from "@/auth";
 import { formatBarangayDisplayName, getBarangayInitials } from "@/lib/barangay-display";
+import { getEffectiveSession } from "@/lib/platform/workspace";
 import { GlobalSearchInput } from "./global-search-input";
 
 export async function Header() {
-  const session = await auth();
+  const session = await getEffectiveSession();
   const workspaceName = formatBarangayDisplayName(session?.user?.barangayName);
   const workspaceInitials = getBarangayInitials(session?.user?.barangayName);
+  const isPlatformWorkspace = session?.user?.role === "SUPER_ADMIN" && Boolean(session.user.barangayId);
 
   return (
     <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur-xl">
@@ -32,7 +33,7 @@ export async function Header() {
           </div>
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-slate-950">{workspaceName}</p>
-            <p className="truncate text-xs text-slate-500">Admin workspace</p>
+            <p className="truncate text-xs text-slate-500">{isPlatformWorkspace ? "Platform workspace" : "Admin workspace"}</p>
           </div>
         </div>
       </div>

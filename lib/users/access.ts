@@ -1,9 +1,9 @@
 import { Role } from "@prisma/client";
 import type { Session } from "next-auth";
-import { auth } from "@/auth";
+import { getEffectiveSession } from "@/lib/platform/workspace";
 
 export async function requireUserManagementSession(currentSession?: Session | null) {
-  const session = currentSession ?? (await auth());
+  const session = currentSession ?? (await getEffectiveSession());
 
   if (!session?.user) {
     throw new Error("UNAUTHENTICATED");

@@ -1,7 +1,7 @@
-import { auth } from "@/auth";
+import { getEffectiveSession } from "@/lib/platform/workspace";
 
 export async function requireHouseholdBarangayId() {
-  const session = await auth();
+  const session = await getEffectiveSession();
 
   if (!session?.user) {
     throw new Error("UNAUTHENTICATED");

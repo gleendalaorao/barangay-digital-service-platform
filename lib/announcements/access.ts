@@ -1,8 +1,8 @@
 import { Role } from "@prisma/client";
-import { auth } from "@/auth";
+import { getEffectiveSession } from "@/lib/platform/workspace";
 
 export async function requireAnnouncementSession() {
-  const session = await auth();
+  const session = await getEffectiveSession();
 
   if (!session?.user) {
     throw new Error("UNAUTHENTICATED");
