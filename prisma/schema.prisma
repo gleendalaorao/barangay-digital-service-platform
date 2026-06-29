@@ -208,12 +208,20 @@ model PublicDocumentRequest {
   id              String              @id @default(cuid())
   barangayId      String
   residentId      String?
+  firstName       String
+  middleName      String?
+  lastName        String
+  suffix          String?
+  birthDate       DateTime?
   requesterName   String
   requesterEmail  String?
   requesterMobile String
   certificateType CertificateType
   status          PublicRequestStatus @default(SUBMITTED)
   purpose         String?
+  addressLine     String
+  purok           String?
+  notes           String?
   trackingCode    String              @unique
   submittedAt     DateTime            @default(now())
   reviewedAt      DateTime?

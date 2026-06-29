@@ -1,0 +1,124 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { CertificateType } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
+import { formatCertificateType } from "@/lib/certificates/format";
+import { createPublicRequest } from "../actions";
+
+type PublicRequestPageProps = {
+  params: Promise<{ barangaySlug: string }>;
+};
+
+export default async function PublicRequestPage({ params }: PublicRequestPageProps) {
+  const { barangaySlug } = await params;
+  const barangay = await prisma.barangay.findUnique({
+    where: { slug: barangaySlug },
+    select: { name: true, slug: true, municipality: true, province: true },
+  });
+
+  if (!barangay) {
+    notFound();
+  }
+
+  return (
+    <main className="min-h-screen bg-[#f7f9f8]">
+      <PublicHeader barangayName={barangay.name} slug={barangay.slug} />
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-8 sm:px-6">
+        <div>
+          <p className="text-sm font-medium uppercase tracking-[0.16em] text-brand-700">Online Request</p>
+          <h1 className="mt-2 text-3xl font-semibold text-ink-900">Request a Barangay Document</h1>
+          <p className="mt-2 text-sm text-ink-500">
+            This creates a request for staff review. It does not automatically issue an official document.
+          </p>
+        </div>
+        <form action={createPublicRequest.bind(null, barangay.slug)} className="space-y-6">
+          <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="text-lg font-semibold text-ink-900">Requested Document</h2>
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              <label className="block">
+                <span className="text-sm font-medium text-ink-700">Certificate type</span>
+                <select name="certificateType" required className="mt-1 h-11 w-full rounded-md border border-slate-200 bg-white px-3 text-sm">
+                  {Object.values(CertificateType).map((type) => (
+                    <option key={type} value={type}>
+                      {formatCertificateType(type)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <Field label="Purpose" name="purpose" required />
+            </div>
+          </section>
+
+          <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="text-lg font-semibold text-ink-900">Requester Information</h2>
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              <Field label="First name" name="firstName" required />
+              <Field label="Middle name" name="middleName" />
+              <Field label="Last name" name="lastName" required />
+              <Field label="Suffix" name="suffix" />
+              <Field label="Birth date" name="birthDate" type="date" />
+              <Field label="Contact number" name="contactNumber" required />
+              <Field label="Email" name="email" type="email" />
+              <Field label="Purok" name="purok" />
+              <Field label="Address" name="address" required wide />
+              <label className="block md:col-span-2">
+                <span className="text-sm font-medium text-ink-700">Notes</span>
+                <textarea name="notes" rows={4} className="mt-1 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm" />
+              </label>
+            </div>
+          </section>
+
+          <div className="flex items-center justify-end gap-3">
+            <Link href={`/b/${barangay.slug}`} className="rounded-md border border-slate-200 px-4 py-2 text-sm font-medium text-ink-700">
+              Cancel
+            </Link>
+            <button type="submit" className="rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white">
+              Submit Request
+            </button>
+          </div>
+        </form>
+      </div>
+    </main>
+  );
+}
+
+function PublicHeader({ barangayName, slug }: { barangayName: string; slug: string }) {
+  return (
+    <header className="border-b border-slate-200 bg-white">
+      <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-4 sm:px-6">
+        <Link href={`/b/${slug}`} className="text-sm font-semibold text-ink-900">
+          Barangay {barangayName}
+        </Link>
+        <Link href={`/b/${slug}/track`} className="text-sm font-medium text-brand-700">
+          Track Request
+        </Link>
+      </div>
+    </header>
+  );
+}
+
+function Field({
+  label,
+  name,
+  type = "text",
+  required,
+  wide,
+}: {
+  label: string;
+  name: string;
+  type?: string;
+  required?: boolean;
+  wide?: boolean;
+}) {
+  return (
+    <label className={wide ? "block md:col-span-2" : "block"}>
+      <span className="text-sm font-medium text-ink-700">{label}</span>
+      <input
+        type={type}
+        name={name}
+        required={required}
+        className="mt-1 h-11 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"
+      />
+    </label>
+  );
+}

@@ -16,7 +16,7 @@ const navigation = [
   { name: "Resident Registry", href: "/residents", icon: Users, current: false },
   { name: "Certificates", href: "/certificates/new", icon: FileCheck2, current: false },
   { name: "Logbook", href: "/certificates", icon: BookOpenCheck, current: false },
-  { name: "Requests", href: "#", icon: Inbox, current: false },
+  { name: "Requests", href: "/requests", icon: Inbox, current: false },
   { name: "Households", href: "/households", icon: Home, current: false },
   { name: "Reports", href: "#", icon: BarChart3, current: false },
 ];

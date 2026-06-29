@@ -23,7 +23,7 @@ const actions = [
     name: "View Requests",
     description: "Review submitted public service requests before approval.",
     icon: Inbox,
-    href: "#",
+    href: "/requests",
   },
   {
     name: "Household Registry",
