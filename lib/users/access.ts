@@ -1,8 +1,9 @@
 import { Role } from "@prisma/client";
+import type { Session } from "next-auth";
 import { auth } from "@/auth";
 
-export async function requireUserManagementSession() {
-  const session = await auth();
+export async function requireUserManagementSession(currentSession?: Session | null) {
+  const session = currentSession ?? (await auth());
 
   if (!session?.user) {
     throw new Error("UNAUTHENTICATED");
@@ -12,10 +13,16 @@ export async function requireUserManagementSession() {
     throw new Error("USER_MANAGEMENT_BARANGAY_CONTEXT_REQUIRED");
   }
 
+  if (session.user.role !== Role.ADMIN) {
+    throw new Error("USER_MANAGEMENT_ADMIN_REQUIRED");
+  }
+
   return {
     userId: session.user.id,
     role: session.user.role,
     barangayId: session.user.barangayId,
+    email: session.user.email,
+    barangayName: session.user.barangayName,
   };
 }
 
@@ -34,6 +41,10 @@ export function getUserManagementAccessMessage(error: unknown) {
 
   if (error instanceof Error && error.message === "UNAUTHENTICATED") {
     return "Sign in with a barangay admin account to manage users.";
+  }
+
+  if (error instanceof Error && error.message === "USER_MANAGEMENT_ADMIN_REQUIRED") {
+    return "Only barangay admins can view and manage user accounts.";
   }
 
   return "User management is unavailable right now.";

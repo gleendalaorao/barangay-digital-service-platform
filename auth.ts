@@ -7,6 +7,7 @@ import { verifyPassword } from "@/lib/auth/password";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: process.env.NEXTAUTH_SECRET,
+  trustHost: true,
   session: {
     strategy: "jwt",
   },
@@ -35,6 +36,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             passwordHash: true,
             role: true,
             barangayId: true,
+            barangay: {
+              select: {
+                name: true,
+              },
+            },
             isActive: true,
           },
         });
@@ -55,6 +61,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           email: user.email,
           role: user.role,
           barangayId: user.barangayId,
+          barangayName: user.barangay?.name ?? null,
         };
       },
     }),
@@ -65,6 +72,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.id = user.id;
         token.role = user.role as Role;
         token.barangayId = user.barangayId;
+        token.barangayName = user.barangayName;
       }
 
       return token;
@@ -74,6 +82,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.id as string;
         session.user.role = token.role as Role;
         session.user.barangayId = token.barangayId as string | null;
+        session.user.barangayName = token.barangayName as string | null;
       }
 
       return session;
