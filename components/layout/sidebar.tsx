@@ -16,6 +16,7 @@ import {
   UserCircle,
   Users,
 } from "lucide-react";
+import { signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -54,7 +55,7 @@ const navigationGroups = [
       { name: "Users", href: "/users", icon: Users },
       { name: "Audit Logs", href: "/audit-logs", icon: ScrollText },
       { name: "Profile", href: "#", icon: UserCircle },
-      { name: "Logout", href: "#", icon: LogOut },
+      { name: "Logout", href: "/logout", icon: LogOut },
     ],
   },
 ];
@@ -101,6 +102,25 @@ export function Sidebar() {
               <div className="mt-2 space-y-1">
                 {group.items.map((item) => {
                   const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href) && item.href !== "#";
+                  const Icon = item.icon;
+
+                  if (item.name === "Logout") {
+                    return (
+                      <button
+                        key={item.name}
+                        type="button"
+                        title={collapsed ? item.name : undefined}
+                        onClick={() => signOut({ callbackUrl: "/login" })}
+                        className={cn(
+                          "flex h-10 w-full items-center gap-3 rounded-md px-3 text-left text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-950",
+                          collapsed && "justify-center px-0",
+                        )}
+                      >
+                        <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+                        {!collapsed ? <span className="truncate">{item.name}</span> : null}
+                      </button>
+                    );
+                  }
 
                   return (
                     <a
@@ -115,7 +135,7 @@ export function Sidebar() {
                           : "text-slate-600 hover:bg-slate-100 hover:text-slate-950",
                       )}
                     >
-                      <item.icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+                      <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
                       {!collapsed ? <span className="truncate">{item.name}</span> : null}
                     </a>
                   );
