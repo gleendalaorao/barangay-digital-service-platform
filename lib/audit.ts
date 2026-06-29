@@ -8,6 +8,7 @@ type AuditEventInput = {
   entity: string;
   entityId?: string | null;
   description: string;
+  metadata?: Record<string, unknown>;
   ipAddress?: string | null;
 };
 
@@ -24,6 +25,7 @@ export async function logAuditEvent(input: AuditEventInput) {
         entityId: input.entityId ?? null,
         ipAddress: input.ipAddress ?? null,
         metadata: {
+          ...(input.metadata ?? {}),
           description: input.description,
         },
       },

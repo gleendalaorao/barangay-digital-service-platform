@@ -5,6 +5,7 @@ import {
   BookOpenCheck,
   ChevronLeft,
   ChevronRight,
+  DatabaseBackup,
   FileCheck2,
   Home,
   Inbox,
@@ -46,6 +47,7 @@ const navigationGroups = [
     items: [
       { name: "Announcements", href: "/announcements", icon: Megaphone },
       { name: "Settings", href: "/settings/barangay", icon: Settings },
+      { name: "Backup & Restore", href: "/settings/backup", icon: DatabaseBackup },
     ],
   },
   {
