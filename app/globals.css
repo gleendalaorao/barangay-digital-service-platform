@@ -49,4 +49,18 @@ a {
     box-shadow: none;
     border: 0;
   }
+
+  #printable-report,
+  #printable-report * {
+    visibility: visible;
+  }
+
+  #printable-report {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    padding: 0;
+    box-shadow: none;
+    border: 0;
+  }
 }
