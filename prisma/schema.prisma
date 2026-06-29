@@ -187,6 +187,7 @@ model CertificateRequest {
   certificateType CertificateType
   status         CertificateStatus @default(DRAFT)
   purpose        String?
+  remarks        String?
   controlNumber  String?
   issuedAt       DateTime?
   releasedAt     DateTime?

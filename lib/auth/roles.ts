@@ -15,5 +15,21 @@ export function canManageBarangayUsers(role?: Role | null) {
 }
 
 export function canApproveCertificates(role?: Role | null) {
-  return role === Role.ADMIN || role === Role.CAPTAIN || role === Role.SECRETARY;
+  return role === Role.ADMIN || role === Role.CAPTAIN;
+}
+
+export function canCreateCertificateDraft(role?: Role | null) {
+  return role === Role.ADMIN || role === Role.SECRETARY || role === Role.CAPTAIN || role === Role.STAFF;
+}
+
+export function canSubmitCertificatesForApproval(role?: Role | null) {
+  return role === Role.ADMIN || role === Role.SECRETARY;
+}
+
+export function canReleaseCertificates(role?: Role | null) {
+  return role === Role.ADMIN || role === Role.SECRETARY;
+}
+
+export function canCancelCertificates(role?: Role | null) {
+  return role === Role.ADMIN;
 }

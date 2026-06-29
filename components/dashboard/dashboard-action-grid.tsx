@@ -17,7 +17,7 @@ const actions = [
     name: "Generate Certificate",
     description: "Start certificate preparation after staff verification.",
     icon: FilePlus2,
-    href: "#",
+    href: "/certificates/new",
   },
   {
     name: "View Requests",
@@ -35,7 +35,7 @@ const actions = [
     name: "Certificate Logbook",
     description: "Track document status, release dates, and control numbers.",
     icon: BookOpenCheck,
-    href: "#",
+    href: "/certificates",
   },
   {
     name: "Reports",
