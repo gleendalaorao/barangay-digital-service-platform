@@ -16,6 +16,7 @@ import {
   ScrollText,
   Settings,
   Users,
+  UserPlus,
 } from "lucide-react";
 import type { Role } from "@prisma/client";
 import { signOut } from "next-auth/react";
@@ -33,6 +34,7 @@ const navigationGroups = [
     items: [
       { name: "Residents", href: "/residents", icon: Users },
       { name: "Households", href: "/households", icon: Home },
+      { name: "Resident Verifications", href: "/resident-verifications", icon: UserPlus },
     ],
   },
   {
@@ -81,6 +83,7 @@ const platformWorkspaceGroup = {
   items: [
     { name: "Tenant Dashboard", href: "/", icon: LayoutDashboard },
     { name: "Residents", href: "/residents", icon: Users },
+    { name: "Resident Verifications", href: "/resident-verifications", icon: UserPlus },
     { name: "Certificates", href: "/certificates", icon: BookOpenCheck },
     { name: "Requests", href: "/requests", icon: Inbox },
     { name: "Exit Workspace", href: "/platform/workspace/exit", icon: LogOut },

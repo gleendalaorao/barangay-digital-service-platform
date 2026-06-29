@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CertificateType } from "@prisma/client";
+import { CertificateType, ResidentAccountStatus } from "@prisma/client";
 import { Building2 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { formatBarangayDisplayName } from "@/lib/barangay-display";
 import { formatCertificateType } from "@/lib/certificates/format";
+import { getResidentSession } from "@/lib/resident-accounts/session";
 import { createPublicRequest } from "../actions";
 
 type PublicRequestPageProps = {
@@ -21,6 +22,9 @@ export default async function PublicRequestPage({ params }: PublicRequestPagePro
   if (!barangay) {
     notFound();
   }
+
+  const residentAccount = await getResidentSession(barangay.slug);
+  const verifiedResidentAccount = residentAccount?.status === ResidentAccountStatus.VERIFIED ? residentAccount : null;
 
   return (
     <main className="min-h-screen bg-slate-50">
@@ -63,15 +67,15 @@ export default async function PublicRequestPage({ params }: PublicRequestPagePro
             <h2 className="text-lg font-semibold text-slate-950">Requester Information</h2>
             <p className="mt-1 text-sm text-slate-500">Use the contact number you will use later to track this request.</p>
             <div className="mt-5 grid gap-4 md:grid-cols-2">
-              <Field label="First name" name="firstName" required />
-              <Field label="Middle name" name="middleName" />
-              <Field label="Last name" name="lastName" required />
-              <Field label="Suffix" name="suffix" />
-              <Field label="Birth date" name="birthDate" type="date" />
-              <Field label="Contact number" name="contactNumber" required />
-              <Field label="Email" name="email" type="email" />
-              <Field label="Purok" name="purok" />
-              <Field label="Address" name="address" required wide />
+              <Field label="First name" name="firstName" required defaultValue={verifiedResidentAccount?.firstName ?? ""} />
+              <Field label="Middle name" name="middleName" defaultValue={verifiedResidentAccount?.middleName ?? ""} />
+              <Field label="Last name" name="lastName" required defaultValue={verifiedResidentAccount?.lastName ?? ""} />
+              <Field label="Suffix" name="suffix" defaultValue={verifiedResidentAccount?.suffix ?? ""} />
+              <Field label="Birth date" name="birthDate" type="date" defaultValue={formatInputDate(verifiedResidentAccount?.birthDate)} />
+              <Field label="Contact number" name="contactNumber" required defaultValue={verifiedResidentAccount?.contactNumber ?? ""} />
+              <Field label="Email" name="email" type="email" defaultValue={verifiedResidentAccount?.email ?? ""} />
+              <Field label="Purok" name="purok" defaultValue={verifiedResidentAccount?.purok ?? ""} />
+              <Field label="Address" name="address" required wide defaultValue={verifiedResidentAccount?.addressLine ?? ""} />
               <label className="block md:col-span-2">
                 <span className="text-sm font-medium text-ink-700">Notes</span>
                 <textarea name="notes" rows={4} className="mt-1 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm" />
@@ -116,12 +120,14 @@ function Field({
   type = "text",
   required,
   wide,
+  defaultValue = "",
 }: {
   label: string;
   name: string;
   type?: string;
   required?: boolean;
   wide?: boolean;
+  defaultValue?: string;
 }) {
   return (
     <label className={wide ? "block md:col-span-2" : "block"}>
@@ -130,8 +136,13 @@ function Field({
         type={type}
         name={name}
         required={required}
+        defaultValue={defaultValue}
         className="mt-1 h-11 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"
       />
     </label>
   );
+}
+
+function formatInputDate(date?: Date | null) {
+  return date ? date.toISOString().slice(0, 10) : "";
 }

@@ -6,6 +6,7 @@ const routes = [
   "/",
   "/login",
   "/residents",
+  "/resident-verifications",
   "/households",
   "/certificates",
   "/requests",
@@ -15,6 +16,8 @@ const routes = [
   "/audit-logs",
   "/announcements",
   "/b/san-isidro",
+  "/b/san-isidro/signup",
+  "/b/san-isidro/resident/login",
   "/b/san-isidro/request",
   "/b/san-isidro/track",
 ];

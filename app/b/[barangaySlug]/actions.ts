@@ -1,9 +1,11 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { ResidentAccountStatus } from "@prisma/client";
 import { generatePublicRequestNumber } from "@/lib/public-requests/control-number";
 import { prisma } from "@/lib/prisma";
 import { formatPublicRequesterName } from "@/lib/public-requests/format";
+import { getResidentSession } from "@/lib/resident-accounts/session";
 import { publicRequestSchema } from "@/lib/validation/public-request";
 
 function parsePublicRequestForm(formData: FormData) {
@@ -39,22 +41,29 @@ export async function createPublicRequest(barangaySlug: string, formData: FormDa
 
   const parsed = parsePublicRequestForm(formData);
   const trackingCode = await generatePublicRequestNumber(barangay.id);
+  const residentAccount = await getResidentSession(barangaySlug);
+  const verifiedResidentAccount =
+    residentAccount?.barangayId === barangay.id && residentAccount.status === ResidentAccountStatus.VERIFIED
+      ? residentAccount
+      : null;
 
   await prisma.publicDocumentRequest.create({
     data: {
       barangayId: barangay.id,
-      firstName: parsed.firstName,
-      middleName: parsed.middleName,
-      lastName: parsed.lastName,
-      suffix: parsed.suffix,
-      birthDate: parsed.birthDate,
-      requesterName: formatPublicRequesterName(parsed),
-      requesterEmail: parsed.email,
-      requesterMobile: parsed.contactNumber,
+      residentId: verifiedResidentAccount?.residentId ?? undefined,
+      residentAccountId: verifiedResidentAccount?.id ?? undefined,
+      firstName: verifiedResidentAccount?.firstName ?? parsed.firstName,
+      middleName: verifiedResidentAccount?.middleName ?? parsed.middleName,
+      lastName: verifiedResidentAccount?.lastName ?? parsed.lastName,
+      suffix: verifiedResidentAccount?.suffix ?? parsed.suffix,
+      birthDate: verifiedResidentAccount?.birthDate ?? parsed.birthDate,
+      requesterName: verifiedResidentAccount ? formatPublicRequesterName(verifiedResidentAccount) : formatPublicRequesterName(parsed),
+      requesterEmail: verifiedResidentAccount?.email ?? parsed.email,
+      requesterMobile: verifiedResidentAccount?.contactNumber ?? parsed.contactNumber,
       certificateType: parsed.certificateType,
       purpose: parsed.purpose,
-      addressLine: parsed.address,
-      purok: parsed.purok,
+      addressLine: verifiedResidentAccount?.addressLine ?? parsed.address,
+      purok: verifiedResidentAccount?.purok ?? parsed.purok,
       notes: parsed.notes,
       trackingCode,
     },

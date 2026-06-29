@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CertificateType } from "@prisma/client";
-import { Building2, Clock, FileText, Mail, Megaphone, Phone, Search } from "lucide-react";
+import { Building2, Clock, FileText, LogIn, Mail, Megaphone, Phone, Search, UserPlus } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { formatBarangayDisplayName } from "@/lib/barangay-display";
 import { formatCertificateType, formatDate } from "@/lib/certificates/format";
@@ -62,6 +62,14 @@ export default async function PublicBarangayPage({ params }: PublicBarangayPageP
             <Link href={`/b/${barangay.slug}/track`} className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50">
               <Search className="h-4 w-4" aria-hidden="true" />
               Track Request
+            </Link>
+            <Link href={`/b/${barangay.slug}/signup`} className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50">
+              <UserPlus className="h-4 w-4" aria-hidden="true" />
+              Resident Sign Up
+            </Link>
+            <Link href={`/b/${barangay.slug}/resident/login`} className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50">
+              <LogIn className="h-4 w-4" aria-hidden="true" />
+              Resident Login
             </Link>
           </div>
         </div>

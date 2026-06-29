@@ -42,6 +42,13 @@ enum PublicRequestStatus {
   CANCELLED
 }
 
+enum ResidentAccountStatus {
+  PENDING_VERIFICATION
+  VERIFIED
+  NEEDS_MORE_INFO
+  REJECTED
+}
+
 enum SubscriptionStatus {
   ACTIVE
   TRIAL
@@ -70,6 +77,8 @@ model Barangay {
   auditLogs           AuditLog[]
   subscriptions       Subscription[]
   announcements       Announcement[]
+  residentAccounts    ResidentAccount[]
+  residentVerificationRequests ResidentVerificationRequest[]
 }
 
 model SubscriptionPlan {
@@ -120,6 +129,7 @@ model User {
   certificateRequests CertificateRequest[] @relation("CertificateRequestedBy")
   approvedCertificates CertificateRequest[] @relation("CertificateApprovedBy")
   createdAnnouncements Announcement[] @relation("AnnouncementCreatedBy")
+  reviewedResidentVerifications ResidentVerificationRequest[]
 
   @@index([barangayId])
   @@index([role])
@@ -174,6 +184,8 @@ model Resident {
   headedHouseholds Household[] @relation("HouseholdHead")
   certificateRequests CertificateRequest[]
   publicRequests   PublicDocumentRequest[]
+  residentAccounts ResidentAccount[]
+  residentVerificationRequests ResidentVerificationRequest[]
 
   @@index([barangayId])
   @@index([householdId])
@@ -218,6 +230,7 @@ model PublicDocumentRequest {
   requesterName   String
   requesterEmail  String?
   requesterMobile String
+  residentAccountId String?
   certificateType CertificateType
   status          PublicRequestStatus @default(SUBMITTED)
   purpose         String?
@@ -232,8 +245,64 @@ model PublicDocumentRequest {
   updatedAt       DateTime            @updatedAt
   barangay        Barangay            @relation(fields: [barangayId], references: [id], onDelete: Cascade)
   resident        Resident?           @relation(fields: [residentId], references: [id], onDelete: SetNull)
+  residentAccount ResidentAccount?    @relation(fields: [residentAccountId], references: [id], onDelete: SetNull)
 
   @@index([barangayId])
+  @@index([residentId])
+  @@index([residentAccountId])
+  @@index([status])
+}
+
+model ResidentAccount {
+  id                   String                  @id @default(cuid())
+  barangayId           String
+  residentId           String?
+  firstName            String
+  middleName           String?
+  lastName             String
+  suffix               String?
+  birthDate            DateTime?
+  gender               String?
+  contactNumber        String
+  email                String
+  passwordHash         String
+  addressLine          String
+  purok                String?
+  status               ResidentAccountStatus   @default(PENDING_VERIFICATION)
+  verifiedAt           DateTime?
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+  barangay             Barangay                @relation(fields: [barangayId], references: [id], onDelete: Cascade)
+  resident             Resident?               @relation(fields: [residentId], references: [id], onDelete: SetNull)
+  verificationRequests ResidentVerificationRequest[]
+  publicRequests       PublicDocumentRequest[]
+
+  @@unique([barangayId, email])
+  @@index([barangayId])
+  @@index([residentId])
+  @@index([status])
+}
+
+model ResidentVerificationRequest {
+  id              String                @id @default(cuid())
+  barangayId      String
+  accountId       String
+  residentId      String?
+  status          ResidentAccountStatus @default(PENDING_VERIFICATION)
+  purpose         String?
+  staffNotes      String?
+  reviewedById    String?
+  submittedAt     DateTime              @default(now())
+  reviewedAt      DateTime?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  barangay        Barangay              @relation(fields: [barangayId], references: [id], onDelete: Cascade)
+  account         ResidentAccount       @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  resident        Resident?             @relation(fields: [residentId], references: [id], onDelete: SetNull)
+  reviewedBy      User?                 @relation(fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([barangayId])
+  @@index([accountId])
   @@index([residentId])
   @@index([status])
 }
