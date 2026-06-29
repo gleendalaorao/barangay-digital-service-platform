@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { CertificateType } from "@prisma/client";
 import { Building2, Clock, FileText, Mail, Megaphone, Phone, Search } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { formatBarangayDisplayName } from "@/lib/barangay-display";
 import { formatCertificateType, formatDate } from "@/lib/certificates/format";
 
 type PublicBarangayPageProps = {
@@ -29,8 +30,10 @@ export default async function PublicBarangayPage({ params }: PublicBarangayPageP
     notFound();
   }
 
+  const displayName = formatBarangayDisplayName(barangay.name);
+
   return (
-    <PublicShell barangayName={barangay.name}>
+    <PublicShell barangayName={displayName}>
       <section className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12">
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
@@ -39,10 +42,10 @@ export default async function PublicBarangayPage({ params }: PublicBarangayPageP
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium uppercase tracking-[0.16em] text-emerald-700">Online Citizen Services</p>
-              <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">Barangay {barangay.name}</h1>
+              <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{displayName}</h1>
               <p className="mt-2 text-slate-500">
-            {barangay.municipality}, {barangay.province}
-          </p>
+                {barangay.municipality}, {barangay.province}
+              </p>
             </div>
           </div>
           <div className="mt-6 grid gap-3 text-sm text-slate-700 sm:grid-cols-2">
@@ -116,7 +119,7 @@ function PublicShell({ barangayName, children }: { barangayName: string; childre
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6">
           <Link href="/" className="text-sm font-semibold text-ink-900">
-            Barangay {barangayName}
+            {barangayName}
           </Link>
           <span className="text-xs font-medium uppercase tracking-[0.16em] text-brand-700">Public Portal</span>
         </div>

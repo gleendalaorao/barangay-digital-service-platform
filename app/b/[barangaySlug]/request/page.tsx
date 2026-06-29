@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { CertificateType } from "@prisma/client";
 import { Building2 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { formatBarangayDisplayName } from "@/lib/barangay-display";
 import { formatCertificateType } from "@/lib/certificates/format";
 import { createPublicRequest } from "../actions";
 
@@ -34,8 +35,8 @@ export default async function PublicRequestPage({ params }: PublicRequestPagePro
               <p className="text-sm font-medium uppercase tracking-[0.16em] text-emerald-700">Online Request</p>
               <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Request a Barangay Document</h1>
               <p className="mt-2 text-sm leading-6 text-slate-500">
-            This creates a request for staff review. It does not automatically issue an official document.
-          </p>
+                This creates a request for staff review. It does not automatically issue an official document.
+              </p>
             </div>
           </div>
         </div>
@@ -93,11 +94,13 @@ export default async function PublicRequestPage({ params }: PublicRequestPagePro
 }
 
 function PublicHeader({ barangayName, slug }: { barangayName: string; slug: string }) {
+  const displayName = formatBarangayDisplayName(barangayName);
+
   return (
     <header className="border-b border-slate-200 bg-white">
       <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-4 sm:px-6">
         <Link href={`/b/${slug}`} className="text-sm font-semibold text-ink-900">
-          Barangay {barangayName}
+          {displayName}
         </Link>
         <Link href={`/b/${slug}/track`} className="text-sm font-medium text-brand-700">
           Track Request

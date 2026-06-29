@@ -25,13 +25,10 @@ export function RecentActivity({
                   <div>
                     <p className="font-medium text-ink-900">{certificate.controlNumber ?? "No control number"}</p>
                     <p className="mt-1 text-sm text-ink-500">
-                      {certificate.resident ? formatResidentName(certificate.resident) : "No resident"} ·{" "}
-                      {formatCertificateType(certificate.certificateType)}
+                      {certificate.resident ? formatResidentName(certificate.resident) : "No resident"} - {formatCertificateType(certificate.certificateType)}
                     </p>
                   </div>
-                  <StatusBadge tone="info">
-                    {formatCertificateStatus(certificate.status)}
-                  </StatusBadge>
+                  <StatusBadge tone="info">{formatCertificateStatus(certificate.status)}</StatusBadge>
                 </div>
                 <p className="mt-2 text-xs text-ink-500">{formatDateTime(certificate.createdAt)}</p>
               </Link>
@@ -51,12 +48,10 @@ export function RecentActivity({
                   <div>
                     <p className="font-medium text-ink-900">{request.trackingCode}</p>
                     <p className="mt-1 text-sm text-ink-500">
-                      {request.requesterName} · {formatCertificateType(request.certificateType)}
+                      {request.requesterName} - {formatCertificateType(request.certificateType)}
                     </p>
                   </div>
-                  <StatusBadge tone="warning">
-                    {formatPublicRequestStatus(request.status)}
-                  </StatusBadge>
+                  <StatusBadge tone="warning">{formatPublicRequestStatus(request.status)}</StatusBadge>
                 </div>
                 <p className="mt-2 text-xs text-ink-500">{formatDateTime(request.submittedAt)}</p>
               </Link>

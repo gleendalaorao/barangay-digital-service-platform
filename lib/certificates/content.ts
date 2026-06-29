@@ -1,4 +1,5 @@
 import { CertificateStatus, CertificateType, type Barangay, type BarangaySetting, type CertificateRequest, type Resident, type User } from "@prisma/client";
+import { formatBarangayDisplayName } from "@/lib/barangay-display";
 import { formatCertificateType, formatDate } from "@/lib/certificates/format";
 import { formatResidentName } from "@/lib/residents/format";
 
@@ -45,7 +46,7 @@ export function buildCertificateDocument(certificate: CertificateRenderData, ver
     throw new Error("Certificate export requires an attached resident record.");
   }
 
-  const barangayName = certificate.barangay.name;
+  const barangayName = formatBarangayDisplayName(certificate.barangay.name);
   const residentName = formatResidentName(certificate.resident);
   const residentAddress = [
     certificate.resident.addressLine,
@@ -65,7 +66,7 @@ export function buildCertificateDocument(certificate: CertificateRenderData, ver
   const headerLines = [
     settings?.officialHeaderLine1 ?? "Republic of the Philippines",
     settings?.officialHeaderLine2 ?? municipalityLine,
-    settings?.officialHeaderLine3 ?? `Barangay ${barangayName}`,
+    settings?.officialHeaderLine3 ?? barangayName,
   ].filter(Boolean);
   const captainName = settings?.captainName ?? certificate.approvedBy?.name ?? "Barangay Captain";
 
@@ -74,7 +75,7 @@ export function buildCertificateDocument(certificate: CertificateRenderData, ver
     barangayName,
     municipalityLine,
     headerLines,
-    officeAddress: settings?.officeAddress ?? `${barangayName} Barangay Hall`,
+    officeAddress: settings?.officeAddress ?? `${barangayName} Hall`,
     controlNumber: certificate.controlNumber ?? "-",
     residentName,
     residentAddress,
@@ -125,13 +126,13 @@ function getCertificateBody(
   switch (type) {
     case CertificateType.BARANGAY_CLEARANCE:
       return [
-        `This is to certify that ${data.residentName}, residing at ${data.residentAddress}, is known to this office as a resident of Barangay ${data.barangayName}.`,
+        `This is to certify that ${data.residentName}, residing at ${data.residentAddress}, is known to this office as a resident of ${data.barangayName}.`,
         `Based on the records available to this barangay, this clearance is issued for ${data.purpose}.`,
         `Issued this ${data.issuedDate} at the Barangay Hall upon request of the above-named resident.`,
       ];
     case CertificateType.RESIDENCY:
       return [
-        `This is to certify that ${data.residentName} is a resident of Barangay ${data.barangayName} and currently resides at ${data.residentAddress}.`,
+        `This is to certify that ${data.residentName} is a resident of ${data.barangayName} and currently resides at ${data.residentAddress}.`,
         `This certification is issued for ${data.purpose}.`,
         `Issued this ${data.issuedDate} at the Barangay Hall upon request of the above-named resident.`,
       ];

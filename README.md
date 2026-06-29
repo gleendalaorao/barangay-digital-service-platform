@@ -1,17 +1,20 @@
 # Barangay Digital Service Platform
 
-Production-oriented foundation for a multi-tenant SaaS platform that helps Philippine barangays manage residents and digital citizen service requests.
+MVP demo application for Philippine barangay service operations. The app includes tenant-scoped staff authentication, resident and household records, certificate workflows, public online document requests, announcements, audit logs, reports, exports, and QR certificate verification.
 
-## Foundation Scope
+## Demo Scope
 
-- Next.js App Router with TypeScript and Tailwind CSS
-- Prisma/PostgreSQL schema for core MVP entities
-- Auth.js-ready credentials authentication foundation
-- Tenant and role helpers for barangay-scoped access
-- Seed data for subscription plans, a sample barangay, settings, and default users
-- Dashboard shell with sidebar, header, and daily-work action cards
+- Auth.js credentials login with role-based access
+- Barangay tenant context for staff workspaces
+- Resident Registry and Household Registry
+- Certificate creation, approval, release, preview, PDF export, and DOCX export
+- QR-backed certificate verification page
+- Public portal for online document requests and request tracking
+- Dashboard analytics and printable basic reports
+- Barangay settings, user management, announcements, and audit trail
+- Seeded Barangay San Isidro demo data
 
-Business modules, CRUD screens, certificate generation, reports, payments, SMS, AI, GIS, disaster, health, inventory, blotter, and mobile app features are intentionally not implemented yet.
+Billing, subscriptions, platform administration, backup/restore, SMS, GIS, health, disaster, and other future modules are intentionally outside this MVP demo.
 
 ## Local Setup
 
@@ -21,31 +24,121 @@ Business modules, CRUD screens, certificate generation, reports, payments, SMS, 
    npm install
    ```
 
-2. Copy environment variables:
+2. Create `.env` from the example:
 
    ```bash
    cp .env.example .env
    ```
 
-3. Update `DATABASE_URL` and `NEXTAUTH_SECRET`.
+3. Configure local environment values:
 
-4. Create the database schema and seed records:
-
-   ```bash
-   npm run prisma:migrate
-   npm run db:seed
+   ```env
+   DATABASE_URL="postgresql://postgres:postgres@localhost:5432/barangay_saas_dev"
+   AUTH_SECRET="replace-with-a-local-secret"
+   NEXTAUTH_SECRET="replace-with-a-local-secret"
+   NEXTAUTH_URL="http://localhost:3000"
+   APP_URL="http://localhost:3000"
    ```
 
-5. Start the app:
+4. Push the Prisma schema to the local database:
+
+   ```bash
+   npx prisma db push
+   ```
+
+5. Generate Prisma Client:
+
+   ```bash
+   npx prisma generate
+   ```
+
+6. Seed demo data:
+
+   ```bash
+   npx prisma db seed
+   ```
+
+7. Start the dev server:
 
    ```bash
    npm run dev
    ```
 
-## Seed Users
+8. Open the staff app:
+
+   ```text
+   http://localhost:3000/login
+   ```
+
+## Demo Login Accounts
+
+All seeded accounts use:
+
+```text
+password123
+```
 
 - Super admin: `superadmin@barangay-platform.local`
-- Barangay admin: `admin@sample-barangay.local`
-- Default password: `ChangeMe123!`
+- Barangay admin: `admin@sanisidro.local`
+- Secretary: `secretary@sanisidro.local`
+- Barangay captain: `captain@sanisidro.local`
+- Staff: `staff@sanisidro.local`
 
-Change seed credentials before using any non-local environment.
+Recommended guided demo login:
+
+```text
+admin@sanisidro.local
+password123
+```
+
+## Public Portal
+
+Barangay San Isidro public portal:
+
+```text
+http://localhost:3000/b/san-isidro
+```
+
+Submit an online request:
+
+```text
+http://localhost:3000/b/san-isidro/request
+```
+
+Track an online request:
+
+```text
+http://localhost:3000/b/san-isidro/track
+```
+
+Use the seeded tracking codes from the Public Requests page, or submit a new request and keep the generated request number plus contact number.
+
+## QR Certificate Verification
+
+Approved or released certificates can be exported and include a QR code. The QR code points to:
+
+```text
+/verify/{certificateId}
+```
+
+During a demo, open an approved or released certificate from the Certificate Logbook, use the preview/export controls, then scan or open the verification URL to show the public authenticity check.
+
+## Demo QA
+
+Run the main verification commands:
+
+```bash
+npx prisma validate
+npx prisma generate
+npm run typecheck
+npm run build
+```
+
+Optional route smoke check after starting the app:
+
+```bash
+npm run dev
+npm run smoke:routes
+```
+
+The smoke script signs in as the seeded barangay admin, checks the main demo routes, verifies that SECRETARY and STAFF cannot manage users, and confirms that SUPER_ADMIN without barangay context sees the expected placeholder.

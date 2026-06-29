@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SearchCheck } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { formatBarangayDisplayName } from "@/lib/barangay-display";
 import { formatCertificateType, formatDateTime } from "@/lib/certificates/format";
 import {
   formatPublicRequestStatus,
@@ -44,7 +45,7 @@ export default async function TrackRequestPage({ params, searchParams }: TrackPa
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-4 sm:px-6">
           <Link href={`/b/${barangay.slug}`} className="text-sm font-semibold text-ink-900">
-            Barangay {barangay.name}
+            {formatBarangayDisplayName(barangay.name)}
           </Link>
           <Link href={`/b/${barangay.slug}/request`} className="text-sm font-medium text-brand-700">
             Request Document
@@ -62,10 +63,10 @@ export default async function TrackRequestPage({ params, searchParams }: TrackPa
               <p className="text-sm font-medium uppercase tracking-[0.16em] text-emerald-700">Request Tracking</p>
               <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Track Document Request</h1>
               {submitted ? (
-            <p className="mt-2 text-sm text-emerald-700">
-              Your request was submitted. Keep your request number and contact number for tracking.
-            </p>
-          ) : null}
+                <p className="mt-2 text-sm text-emerald-700">
+                  Your request was submitted. Keep your request number and contact number for tracking.
+                </p>
+              ) : null}
             </div>
           </div>
         </div>

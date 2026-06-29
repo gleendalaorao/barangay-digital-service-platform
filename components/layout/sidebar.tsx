@@ -13,7 +13,6 @@ import {
   Megaphone,
   ScrollText,
   Settings,
-  UserCircle,
   Users,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
@@ -36,9 +35,9 @@ const navigationGroups = [
   {
     label: "Document Services",
     items: [
-      { name: "Certificates", href: "/certificates/new", icon: FileCheck2 },
+      { name: "New Certificate", href: "/certificates/new", icon: FileCheck2 },
       { name: "Certificate Logbook", href: "/certificates", icon: BookOpenCheck },
-      { name: "Requests", href: "/requests", icon: Inbox },
+      { name: "Public Requests", href: "/requests", icon: Inbox },
       { name: "Reports", href: "/reports", icon: BarChart3 },
     ],
   },
@@ -54,7 +53,6 @@ const navigationGroups = [
     items: [
       { name: "Users", href: "/users", icon: Users },
       { name: "Audit Logs", href: "/audit-logs", icon: ScrollText },
-      { name: "Profile", href: "#", icon: UserCircle },
       { name: "Logout", href: "/logout", icon: LogOut },
     ],
   },
