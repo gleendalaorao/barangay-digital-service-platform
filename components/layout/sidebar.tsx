@@ -10,6 +10,7 @@ import {
   Inbox,
   LayoutDashboard,
   LogOut,
+  ScrollText,
   Settings,
   UserCircle,
   Users,
@@ -47,6 +48,7 @@ const navigationGroups = [
     label: "System",
     items: [
       { name: "Users", href: "/users", icon: Users },
+      { name: "Audit Logs", href: "/audit-logs", icon: ScrollText },
       { name: "Profile", href: "#", icon: UserCircle },
       { name: "Logout", href: "#", icon: LogOut },
     ],

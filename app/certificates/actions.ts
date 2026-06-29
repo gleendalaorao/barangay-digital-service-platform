@@ -10,6 +10,7 @@ import {
   canReleaseCertificates,
   canSubmitCertificatesForApproval,
 } from "@/lib/auth/roles";
+import { logAuditEvent } from "@/lib/audit";
 import { generateCertificateControlNumber } from "@/lib/certificates/control-number";
 import { requireCertificateSession } from "@/lib/certificates/access";
 import { prisma } from "@/lib/prisma";
@@ -67,6 +68,15 @@ export async function createCertificate(formData: FormData) {
     },
   });
 
+  await logAuditEvent({
+    barangayId: session.barangayId,
+    userId: session.userId,
+    action: "CERTIFICATE_CREATED",
+    entity: "CertificateRequest",
+    entityId: certificate.id,
+    description: `Created ${parsed.certificateType} certificate request.`,
+  });
+
   revalidatePath("/certificates");
   redirect(`/certificates/${certificate.id}?created=1`);
 }
@@ -88,6 +98,15 @@ export async function submitCertificateForApproval(formData: FormData) {
     data: {
       status: CertificateStatus.PENDING_APPROVAL,
     },
+  });
+
+  await logAuditEvent({
+    barangayId: session.barangayId,
+    userId: session.userId,
+    action: "CERTIFICATE_APPROVED",
+    entity: "CertificateRequest",
+    entityId: id,
+    description: "Approved certificate request.",
   });
 
   revalidateCertificate(id);
@@ -114,6 +133,15 @@ export async function approveCertificate(formData: FormData) {
     },
   });
 
+  await logAuditEvent({
+    barangayId: session.barangayId,
+    userId: session.userId,
+    action: "CERTIFICATE_RELEASED",
+    entity: "CertificateRequest",
+    entityId: id,
+    description: "Marked certificate as released.",
+  });
+
   revalidateCertificate(id);
 }
 
@@ -135,6 +163,15 @@ export async function releaseCertificate(formData: FormData) {
       status: CertificateStatus.RELEASED,
       releasedAt: new Date(),
     },
+  });
+
+  await logAuditEvent({
+    barangayId: session.barangayId,
+    userId: session.userId,
+    action: "CERTIFICATE_CANCELLED",
+    entity: "CertificateRequest",
+    entityId: id,
+    description: "Cancelled certificate request.",
   });
 
   revalidateCertificate(id);

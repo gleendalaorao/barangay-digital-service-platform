@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { logAuditEvent } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
 import { requireHouseholdBarangayId } from "@/lib/households/access";
 import { householdFormSchema } from "@/lib/validation/household";
@@ -70,6 +71,14 @@ export async function createHousehold(formData: FormData) {
     },
   });
 
+  await logAuditEvent({
+    barangayId,
+    action: "HOUSEHOLD_CREATED",
+    entity: "Household",
+    entityId: household.id,
+    description: `Created household ${data.householdNo}.`,
+  });
+
   revalidatePath("/households");
   redirect(`/households/${household.id}?created=1`);
 }
@@ -84,6 +93,14 @@ export async function updateHousehold(id: string, formData: FormData) {
       barangayId,
     },
     data,
+  });
+
+  await logAuditEvent({
+    barangayId,
+    action: "HOUSEHOLD_UPDATED",
+    entity: "Household",
+    entityId: id,
+    description: `Updated household ${data.householdNo}.`,
   });
 
   revalidatePath("/households");
@@ -107,6 +124,14 @@ export async function deactivateHousehold(formData: FormData) {
     data: {
       isActive: false,
     },
+  });
+
+  await logAuditEvent({
+    barangayId,
+    action: "HOUSEHOLD_DEACTIVATED",
+    entity: "Household",
+    entityId: id,
+    description: "Deactivated household record.",
   });
 
   revalidatePath("/households");
@@ -149,6 +174,14 @@ export async function addHouseholdMember(householdId: string, formData: FormData
     },
   });
 
+  await logAuditEvent({
+    barangayId,
+    action: "HOUSEHOLD_MEMBER_ADDED",
+    entity: "Household",
+    entityId: householdId,
+    description: `Added resident ${residentId} to household.`,
+  });
+
   revalidatePath(`/households/${householdId}`);
 }
 
@@ -169,6 +202,14 @@ export async function removeHouseholdMember(householdId: string, formData: FormD
     data: {
       householdId: null,
     },
+  });
+
+  await logAuditEvent({
+    barangayId,
+    action: "HOUSEHOLD_MEMBER_REMOVED",
+    entity: "Household",
+    entityId: householdId,
+    description: `Removed resident ${residentId} from household.`,
   });
 
   revalidatePath(`/households/${householdId}`);

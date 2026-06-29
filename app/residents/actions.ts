@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { logAuditEvent } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
 import { requireResidentBarangayId } from "@/lib/residents/access";
 import { residentFormSchema } from "@/lib/validation/resident";
@@ -64,6 +65,14 @@ export async function createResident(formData: FormData) {
     },
   });
 
+  await logAuditEvent({
+    barangayId,
+    action: "RESIDENT_CREATED",
+    entity: "Resident",
+    entityId: resident.id,
+    description: `Created resident record for ${data.firstName} ${data.lastName}.`,
+  });
+
   revalidatePath("/residents");
   redirect(`/residents/${resident.id}?created=1`);
 }
@@ -78,6 +87,14 @@ export async function updateResident(id: string, formData: FormData) {
       barangayId,
     },
     data,
+  });
+
+  await logAuditEvent({
+    barangayId,
+    action: "RESIDENT_UPDATED",
+    entity: "Resident",
+    entityId: id,
+    description: `Updated resident record for ${data.firstName} ${data.lastName}.`,
   });
 
   revalidatePath("/residents");
@@ -101,6 +118,14 @@ export async function softDeleteResident(formData: FormData) {
     data: {
       isActive: false,
     },
+  });
+
+  await logAuditEvent({
+    barangayId,
+    action: "RESIDENT_DEACTIVATED",
+    entity: "Resident",
+    entityId: id,
+    description: "Deactivated resident record.",
   });
 
   revalidatePath("/residents");

@@ -3,6 +3,7 @@
 import { PublicRequestStatus } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { canUpdatePublicRequestStatus } from "@/lib/auth/roles";
+import { logAuditEvent } from "@/lib/audit";
 import { requirePublicRequestBarangaySession } from "@/lib/public-requests/access";
 import { prisma } from "@/lib/prisma";
 
@@ -44,6 +45,15 @@ export async function updatePublicRequestStatus(status: PublicRequestStatus, for
       reviewedAt: reviewedStatuses.includes(status) ? new Date() : undefined,
       completedAt: completedStatuses.includes(status) ? new Date() : undefined,
     },
+  });
+
+  await logAuditEvent({
+    barangayId: session.barangayId,
+    userId: session.userId,
+    action: "PUBLIC_REQUEST_STATUS_CHANGED",
+    entity: "PublicDocumentRequest",
+    entityId: id,
+    description: `Changed public request status to ${status}.`,
   });
 
   revalidatePath("/requests");

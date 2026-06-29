@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { logAuditEvent } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
 import { requireBarangaySettingsSession } from "@/lib/barangay-settings/access";
 import { barangaySettingsSchema } from "@/lib/validation/barangay-settings";
@@ -102,6 +103,15 @@ export async function updateBarangaySettings(formData: FormData) {
       },
     }),
   ]);
+
+  await logAuditEvent({
+    barangayId: session.barangayId,
+    userId: session.userId,
+    action: "BARANGAY_SETTINGS_UPDATED",
+    entity: "Barangay",
+    entityId: session.barangayId,
+    description: "Updated barangay settings and certificate identity.",
+  });
 
   revalidatePath("/settings/barangay");
   revalidatePath(`/b/${parsed.slug}`);

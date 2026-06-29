@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { logAuditEvent } from "@/lib/audit";
 import { hashPassword } from "@/lib/auth/password";
 import { prisma } from "@/lib/prisma";
 import { canMutateBarangayUsers, requireUserManagementSession } from "@/lib/users/access";
@@ -61,6 +62,15 @@ export async function createBarangayUser(formData: FormData) {
     },
   });
 
+  await logAuditEvent({
+    barangayId: session.barangayId,
+    userId: session.userId,
+    action: "USER_CREATED",
+    entity: "User",
+    entityId: user.id,
+    description: `Created user account for ${parsed.email}.`,
+  });
+
   revalidatePath("/users");
   redirect(`/users/${user.id}/edit?created=1`);
 }
@@ -86,6 +96,26 @@ export async function updateBarangayUser(id: string, formData: FormData) {
       ...(parsed.resetPassword ? { passwordHash: await hashPassword(parsed.resetPassword) } : {}),
     },
   });
+
+  await logAuditEvent({
+    barangayId: session.barangayId,
+    userId: session.userId,
+    action: "USER_UPDATED",
+    entity: "User",
+    entityId: id,
+    description: `Updated user account for ${parsed.name}.`,
+  });
+
+  if (parsed.resetPassword) {
+    await logAuditEvent({
+      barangayId: session.barangayId,
+      userId: session.userId,
+      action: "USER_PASSWORD_RESET",
+      entity: "User",
+      entityId: id,
+      description: "Reset user account password.",
+    });
+  }
 
   revalidatePath("/users");
   revalidatePath(`/users/${id}/edit`);
