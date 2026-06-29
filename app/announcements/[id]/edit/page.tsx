@@ -49,7 +49,10 @@ export default async function EditAnnouncementPage({ params }: EditAnnouncementP
       title: true,
       body: true,
       category: true,
+      featuredImageUrl: true,
+      attachmentUrl: true,
       isPublished: true,
+      publishedAt: true,
     },
   });
 

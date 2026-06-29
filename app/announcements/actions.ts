@@ -16,6 +16,9 @@ function parseAnnouncementForm(formData: FormData) {
     title: formData.get("title"),
     body: formData.get("body"),
     category: formData.get("category"),
+    featuredImageUrl: formData.get("featuredImageUrl"),
+    attachmentUrl: formData.get("attachmentUrl"),
+    publishedAt: formData.get("publishedAt"),
     isPublished: formData.get("isPublished") === "on",
   });
 
@@ -23,6 +26,9 @@ function parseAnnouncementForm(formData: FormData) {
     title: parsed.title,
     body: parsed.body,
     category: parsed.category || null,
+    featuredImageUrl: parsed.featuredImageUrl || null,
+    attachmentUrl: parsed.attachmentUrl || null,
+    publishedAt: parsed.publishedAt,
     isPublished: parsed.isPublished,
   };
 }
@@ -42,8 +48,10 @@ export async function createAnnouncement(formData: FormData) {
       title: parsed.title,
       body: parsed.body,
       category: parsed.category,
+      featuredImageUrl: parsed.featuredImageUrl,
+      attachmentUrl: parsed.attachmentUrl,
       isPublished: parsed.isPublished,
-      publishedAt: parsed.isPublished ? new Date() : null,
+      publishedAt: parsed.isPublished ? (parsed.publishedAt ?? new Date()) : null,
     },
     select: {
       id: true,
@@ -94,8 +102,10 @@ export async function updateAnnouncement(id: string, formData: FormData) {
       title: parsed.title,
       body: parsed.body,
       category: parsed.category,
+      featuredImageUrl: parsed.featuredImageUrl,
+      attachmentUrl: parsed.attachmentUrl,
       isPublished: parsed.isPublished,
-      publishedAt: parsed.isPublished ? (current.isPublished ? undefined : new Date()) : null,
+      publishedAt: parsed.isPublished ? (parsed.publishedAt ?? (current.isPublished ? undefined : new Date())) : null,
     },
   });
 
@@ -158,8 +168,12 @@ export async function setAnnouncementPublished(id: string, publish: boolean) {
 
 function revalidateAnnouncements(id?: string) {
   revalidatePath("/announcements");
+  revalidatePath("/website");
+  revalidatePath("/website/announcements");
   if (id) {
     revalidatePath(`/announcements/${id}/edit`);
+    revalidatePath(`/website/announcements/${id}/edit`);
   }
   revalidatePath("/b/[barangaySlug]", "page");
+  revalidatePath("/b/[barangaySlug]/announcements", "page");
 }

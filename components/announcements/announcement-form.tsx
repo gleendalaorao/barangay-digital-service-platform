@@ -2,21 +2,31 @@ import type { Announcement } from "@prisma/client";
 import { SectionCard } from "@/components/ui/section-card";
 
 type AnnouncementFormProps = {
-  announcement?: Pick<Announcement, "title" | "body" | "category" | "isPublished">;
+  announcement?: Pick<Announcement, "title" | "body" | "category" | "featuredImageUrl" | "attachmentUrl" | "isPublished" | "publishedAt">;
   action: (formData: FormData) => void | Promise<void>;
   mode: "create" | "edit";
+  cancelHref?: string;
 };
 
-export function AnnouncementForm({ announcement, action, mode }: AnnouncementFormProps) {
+export function AnnouncementForm({ announcement, action, mode, cancelHref = "/announcements" }: AnnouncementFormProps) {
   return (
     <form action={action} className="space-y-6">
       <SectionCard
-        title={mode === "create" ? "Announcement details" : "Edit announcement"}
-        description="Publish short citizen-facing notices for the public barangay portal."
+        title="What would you like to announce?"
+        description="Post a clear public update for residents, like writing a simple social media announcement."
       >
         <div className="grid gap-4 md:grid-cols-2">
           <Field label="Title" name="title" defaultValue={announcement?.title} required />
           <Field label="Category" name="category" defaultValue={announcement?.category} helper="Example: Advisory, Schedule, Community." />
+          <Field label="Featured image URL" name="featuredImageUrl" defaultValue={announcement?.featuredImageUrl} helper="Optional image shown on the public website." />
+          <Field label="Attachment URL" name="attachmentUrl" defaultValue={announcement?.attachmentUrl} helper="Optional link to a file, form, or supporting page." />
+          <Field
+            label="Publish date"
+            name="publishedAt"
+            type="datetime-local"
+            defaultValue={formatDateTimeInput(announcement?.publishedAt)}
+            helper="Optional. Leave blank to use the time you publish."
+          />
           <label className="block md:col-span-2">
             <span className="text-sm font-medium text-slate-700">Body</span>
             <textarea
@@ -41,7 +51,7 @@ export function AnnouncementForm({ announcement, action, mode }: AnnouncementFor
       </SectionCard>
 
       <div className="flex justify-end gap-3">
-        <a href="/announcements" className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm">
+        <a href={cancelHref} className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm">
           Cancel
         </a>
         <button type="submit" className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700">
@@ -55,12 +65,14 @@ export function AnnouncementForm({ announcement, action, mode }: AnnouncementFor
 function Field({
   label,
   name,
+  type = "text",
   defaultValue,
   required,
   helper,
 }: {
   label: string;
   name: string;
+  type?: string;
   defaultValue?: string | null;
   required?: boolean;
   helper?: string;
@@ -69,7 +81,7 @@ function Field({
     <label className="block">
       <span className="text-sm font-medium text-slate-700">{label}</span>
       <input
-        type="text"
+        type={type}
         name={name}
         defaultValue={defaultValue ?? ""}
         required={required}
@@ -78,4 +90,8 @@ function Field({
       {helper ? <p className="mt-1 text-xs text-slate-500">{helper}</p> : null}
     </label>
   );
+}
+
+function formatDateTimeInput(date?: Date | null) {
+  return date ? date.toISOString().slice(0, 16) : "";
 }
