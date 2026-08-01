@@ -1,5 +1,4 @@
-import { mkdir, readFile, writeFile } from "fs/promises";
-import path from "path";
+import { Prisma } from "@prisma/client";
 import * as XLSX from "xlsx";
 import { prisma } from "@/lib/prisma";
 import {
@@ -54,11 +53,12 @@ type ParsedImportFile = {
   rows: unknown[][];
 };
 
-type StoredImportSession = ParsedImportFile & {
-  createdAt: string;
-};
-
 const requiredFields: ResidentImportField[] = ["firstName", "lastName", "addressLine"];
+
+export const RESIDENT_IMPORT_SESSION_TTL_MS = 2 * 60 * 60 * 1000;
+export const RESIDENT_IMPORT_MAX_FILE_SIZE = 10 * 1024 * 1024;
+export const RESIDENT_IMPORT_MAX_ROWS = 10_000;
+export const RESIDENT_IMPORT_MAX_COLUMNS = 100;
 
 const fieldLabels = new Map(residentImportFields.map((field) => [field.value, field.label]));
 
@@ -86,29 +86,33 @@ for (const [field, synonyms] of Object.entries(headerSynonyms) as [ResidentImpor
   synonyms.forEach((synonym) => synonymLookup.set(normalizeHeader(synonym), field));
 }
 
-const storageRoot = path.join(process.cwd(), ".app-storage", "resident-import");
-const sessionRoot = path.join(storageRoot, "sessions");
-const mappingPath = path.join(storageRoot, "mapping-preferences.json");
+export async function analyzeResidentImportFile(file: File, barangayId: string, userId: string): Promise<ResidentImportMappingSession> {
+  if (file.size > RESIDENT_IMPORT_MAX_FILE_SIZE) {
+    throw new Error("The uploaded file exceeds the 10 MiB import limit.");
+  }
 
-export async function analyzeResidentImportFile(file: File, barangayId: string): Promise<ResidentImportMappingSession> {
   const parsed = await parseResidentFile(file);
-  const sessionId = crypto.randomUUID();
+  const now = new Date();
 
-  await ensureStorage();
-  await writeFile(
-    path.join(sessionRoot, `${sessionId}.json`),
-    JSON.stringify({
-      ...parsed,
-      createdAt: new Date().toISOString(),
-    }),
-    "utf8",
-  );
+  await cleanupImportSessions(now);
+
+  const storedSession = await prisma.residentImportSession.create({
+    data: {
+      barangayId,
+      userId,
+      fileName: parsed.fileName,
+      headers: parsed.headers,
+      rows: parsed.rows as Prisma.InputJsonValue,
+      expiresAt: new Date(now.getTime() + RESIDENT_IMPORT_SESSION_TTL_MS),
+    },
+    select: { id: true },
+  });
 
   const preferences = await loadMappingPreferences(barangayId);
   const mappings = buildColumnMappings(parsed, preferences);
 
   return {
-    sessionId,
+    sessionId: storedSession.id,
     fileName: parsed.fileName,
     totalRows: parsed.rows.length,
     mappings,
@@ -120,13 +124,22 @@ export async function previewResidentImportFromMapping(
   sessionId: string,
   mappings: ResidentImportColumnMapping[],
   barangayId: string,
+  userId: string,
 ): Promise<ResidentImportPreview> {
-  const parsed = await readStoredImportSession(sessionId);
+  const parsed = await readStoredImportSession(sessionId, barangayId, userId);
   const normalizedMappings = normalizeMappings(mappings, parsed);
   const normalizedRows = parsed.rows.map((cells, index) => normalizeRow(cells, normalizedMappings, index + 2));
 
   await markDuplicateRows(normalizedRows, barangayId);
   await saveMappingPreferences(barangayId, normalizedMappings);
+  const updated = await prisma.residentImportSession.updateMany({
+    where: { id: sessionId, barangayId, userId, completedAt: null, expiresAt: { gt: new Date() } },
+    data: { mappings: normalizedMappings as unknown as Prisma.InputJsonValue },
+  });
+
+  if (updated.count !== 1) {
+    throw new Error("This import session is unavailable or has expired. Analyze the file again.");
+  }
 
   const hasManualMapping = normalizedMappings.some((mapping) => mapping.status === "manual");
 
@@ -144,18 +157,39 @@ export async function previewResidentImportFromMapping(
   };
 }
 
-export async function importResidentRows(rows: ResidentImportPreviewRow[], barangayId: string): Promise<ResidentImportResult> {
-  const candidates = rows.filter((row) => row.status === "valid");
-  await markDuplicateRows(candidates, barangayId);
+export async function importResidentRows(
+  sessionId: string,
+  barangayId: string,
+  userId: string,
+): Promise<{ preview: ResidentImportPreview; result: ResidentImportResult }> {
+  const parsed = await readStoredImportSession(sessionId, barangayId, userId, true);
+  const mappings = parsed.mappings;
 
+  if (!mappings) {
+    throw new Error("Preview the import file before saving.");
+  }
+
+  const rows = parsed.rows.map((cells, index) => normalizeRow(cells, mappings, index + 2));
+  await markDuplicateRows(rows, barangayId);
+  const candidates = rows.filter((row) => row.status === "valid");
   const importable = candidates.filter((row) => row.status === "valid");
-  const newDuplicates = candidates.filter((row) => row.status === "duplicate");
-  const duplicates = rows.filter((row) => row.status === "duplicate").length + newDuplicates.length;
+  const newDuplicates: ResidentImportPreviewRow[] = [];
+  const duplicates = rows.filter((row) => row.status === "duplicate").length;
   const invalid = rows.filter((row) => row.status === "invalid").length;
 
-  if (importable.length > 0) {
-    await prisma.resident.createMany({
-      data: importable.map((row) => ({
+  await prisma.$transaction(async (transaction) => {
+    const consumed = await transaction.residentImportSession.updateMany({
+      where: { id: sessionId, barangayId, userId, completedAt: null, expiresAt: { gt: new Date() } },
+      data: { completedAt: new Date() },
+    });
+
+    if (consumed.count !== 1) {
+      throw new Error("This import session is unavailable or has expired. Analyze the file again.");
+    }
+
+    if (importable.length > 0) {
+      await transaction.resident.createMany({
+        data: importable.map((row) => ({
         barangayId,
         firstName: row.firstName,
         middleName: row.middleName,
@@ -173,11 +207,25 @@ export async function importResidentRows(rows: ResidentImportPreviewRow[], baran
         province: row.province,
         purok: row.purok,
         isActive: true,
-      })),
-    });
-  }
+        })),
+      });
+    }
+  });
 
-  return {
+  const hasManualMapping = mappings.some((mapping) => mapping.status === "manual");
+  const preview: ResidentImportPreview = {
+    sessionId,
+    fileName: parsed.fileName,
+    totalRows: rows.length,
+    validRows: rows.filter((row) => row.status === "valid").length,
+    duplicateRows: rows.filter((row) => row.status === "duplicate").length,
+    invalidRows: rows.filter((row) => row.status === "invalid").length,
+    ignoredColumns: mappings.filter((mapping) => !mapping.systemField).length,
+    mappingMode: hasManualMapping ? "manual" : "automatic",
+    mappings,
+    rows,
+  };
+  const result: ResidentImportResult = {
     rowsRead: rows.length,
     imported: importable.length,
     duplicates,
@@ -185,6 +233,8 @@ export async function importResidentRows(rows: ResidentImportPreviewRow[], baran
     ignored: duplicates + invalid,
     errorReportCsv: buildErrorReportCsv([...rows.filter((row) => row.status !== "valid"), ...newDuplicates]),
   };
+
+  return { preview, result };
 }
 
 function buildColumnMappings(parsed: ParsedImportFile, preferences: Record<string, ResidentImportField>): ResidentImportColumnMapping[] {
@@ -265,8 +315,18 @@ async function parseResidentFile(file: File): Promise<ParsedImportFile> {
     throw new Error("The uploaded file must include a header row and at least one resident row.");
   }
 
-  const headers = matrix[0].map((header, index) => optionalText(header) ?? `Column ${index + 1}`);
+  const columnCount = matrix.reduce((maximum, row) => Math.max(maximum, row.length), 0);
+
+  if (columnCount > RESIDENT_IMPORT_MAX_COLUMNS) {
+    throw new Error(`The uploaded file has more than ${RESIDENT_IMPORT_MAX_COLUMNS} columns.`);
+  }
+
+  const headers = Array.from({ length: columnCount }, (_, index) => optionalText(matrix[0][index]) ?? `Column ${index + 1}`);
   const rows = matrix.slice(1).filter((row) => row.some((cell) => optionalText(cell)));
+
+  if (rows.length > RESIDENT_IMPORT_MAX_ROWS) {
+    throw new Error(`The uploaded file has more than ${RESIDENT_IMPORT_MAX_ROWS.toLocaleString("en-US")} resident rows.`);
+  }
 
   if (rows.length === 0) {
     throw new Error("The uploaded file does not contain resident rows.");
@@ -387,53 +447,84 @@ function getMissingRequiredFields(mappings: ResidentImportColumnMapping[]) {
   return requiredFields.filter((field) => !mappedFields.has(field));
 }
 
-async function readStoredImportSession(sessionId: string): Promise<ParsedImportFile> {
-  const content = await readFile(path.join(sessionRoot, `${sessionId}.json`), "utf8");
-  const session = JSON.parse(content) as StoredImportSession;
+async function readStoredImportSession(
+  sessionId: string,
+  barangayId: string,
+  userId: string,
+  requireMappings = false,
+): Promise<ParsedImportFile & { mappings: ResidentImportColumnMapping[] | null }> {
+  const now = new Date();
+  await cleanupImportSessions(now);
+
+  const session = await prisma.residentImportSession.findFirst({
+    where: {
+      id: sessionId,
+      barangayId,
+      userId,
+      completedAt: null,
+      expiresAt: { gt: now },
+      ...(requireMappings ? { mappings: { not: Prisma.DbNull } } : {}),
+    },
+    select: { fileName: true, headers: true, rows: true, mappings: true },
+  });
+
+  if (!session) {
+    throw new Error("This import session is unavailable or has expired. Analyze the file again.");
+  }
 
   return {
     fileName: session.fileName,
-    headers: session.headers,
-    rows: session.rows,
+    headers: session.headers as string[],
+    rows: session.rows as unknown[][],
+    mappings: session.mappings as unknown as ResidentImportColumnMapping[] | null,
   };
 }
 
-async function ensureStorage() {
-  await mkdir(sessionRoot, { recursive: true });
+async function cleanupImportSessions(now: Date) {
+  await prisma.residentImportSession.deleteMany({
+    where: {
+      OR: [{ expiresAt: { lt: now } }, { completedAt: { not: null } }],
+    },
+  });
 }
 
 async function loadMappingPreferences(barangayId: string): Promise<Record<string, ResidentImportField>> {
-  try {
-    const content = await readFile(mappingPath, "utf8");
-    const allPreferences = JSON.parse(content) as Record<string, Record<string, ResidentImportField>>;
-    return allPreferences[barangayId] ?? {};
-  } catch {
-    return {};
-  }
-}
+  const preferences = await prisma.residentImportMappingPreference.findMany({
+    where: { barangayId },
+    select: { normalizedHeader: true, residentField: true },
+  });
+  const result: Record<string, ResidentImportField> = {};
 
-async function saveMappingPreferences(barangayId: string, mappings: ResidentImportColumnMapping[]) {
-  await ensureStorage();
-
-  let allPreferences: Record<string, Record<string, ResidentImportField>> = {};
-
-  try {
-    allPreferences = JSON.parse(await readFile(mappingPath, "utf8")) as Record<string, Record<string, ResidentImportField>>;
-  } catch {
-    allPreferences = {};
-  }
-
-  allPreferences[barangayId] = {
-    ...(allPreferences[barangayId] ?? {}),
-  };
-
-  for (const mapping of mappings) {
-    if (mapping.systemField) {
-      allPreferences[barangayId][normalizeHeader(mapping.originalHeader)] = mapping.systemField;
+  for (const preference of preferences) {
+    if (isResidentImportField(preference.residentField)) {
+      result[preference.normalizedHeader] = preference.residentField;
     }
   }
 
-  await writeFile(mappingPath, JSON.stringify(allPreferences, null, 2), "utf8");
+  return result;
+}
+
+async function saveMappingPreferences(barangayId: string, mappings: ResidentImportColumnMapping[]) {
+  await prisma.$transaction(
+    mappings
+      .filter((mapping): mapping is ResidentImportColumnMapping & { systemField: ResidentImportField } => Boolean(mapping.systemField))
+      .map((mapping) =>
+        prisma.residentImportMappingPreference.upsert({
+          where: {
+            barangayId_normalizedHeader: {
+              barangayId,
+              normalizedHeader: normalizeHeader(mapping.originalHeader),
+            },
+          },
+          update: { residentField: mapping.systemField },
+          create: {
+            barangayId,
+            normalizedHeader: normalizeHeader(mapping.originalHeader),
+            residentField: mapping.systemField,
+          },
+        }),
+      ),
+  );
 }
 
 function buildErrorReportCsv(rows: ResidentImportPreviewRow[]) {

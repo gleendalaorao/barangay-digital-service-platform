@@ -135,7 +135,7 @@ export function ResidentImportWizard() {
                 </p>
               </div>
               <form action={importAction}>
-                <input type="hidden" name="payload" value={JSON.stringify(preview)} />
+                <input type="hidden" name="sessionId" value={preview.sessionId} />
                 <button
                   type="submit"
                   disabled={importPending || preview.validRows === 0}

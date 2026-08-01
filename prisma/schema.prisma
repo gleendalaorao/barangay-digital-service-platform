@@ -58,29 +58,31 @@ enum SubscriptionStatus {
 }
 
 model Barangay {
-  id                  String                  @id @default(cuid())
-  name                String
-  municipality        String
-  province            String
-  region              String
-  slug                String                  @unique
-  contactEmail        String?
-  contactNumber       String?
-  createdAt           DateTime                @default(now())
-  updatedAt           DateTime                @updatedAt
-  settings            BarangaySetting?
-  users               User[]
-  households          Household[]
-  residents           Resident[]
-  certificateRequests CertificateRequest[]
-  publicRequests      PublicDocumentRequest[]
-  auditLogs           AuditLog[]
-  subscriptions       Subscription[]
-  announcements       Announcement[]
-  residentAccounts    ResidentAccount[]
-  residentVerificationRequests ResidentVerificationRequest[]
-  publicOfficials     PublicOfficial[]
-  publicServices      PublicService[]
+  id                               String                            @id @default(cuid())
+  name                             String
+  municipality                     String
+  province                         String
+  region                           String
+  slug                             String                            @unique
+  contactEmail                     String?
+  contactNumber                    String?
+  createdAt                        DateTime                          @default(now())
+  updatedAt                        DateTime                          @updatedAt
+  settings                         BarangaySetting?
+  users                            User[]
+  households                       Household[]
+  residents                        Resident[]
+  certificateRequests              CertificateRequest[]
+  publicRequests                   PublicDocumentRequest[]
+  auditLogs                        AuditLog[]
+  subscriptions                    Subscription[]
+  announcements                    Announcement[]
+  residentAccounts                 ResidentAccount[]
+  residentVerificationRequests     ResidentVerificationRequest[]
+  publicOfficials                  PublicOfficial[]
+  publicServices                   PublicService[]
+  residentImportSessions           ResidentImportSession[]
+  residentImportMappingPreferences ResidentImportMappingPreference[]
 }
 
 model SubscriptionPlan {
@@ -115,23 +117,24 @@ model Subscription {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  barangayId    String?
-  name          String
-  email         String    @unique
-  passwordHash  String
-  role          Role      @default(STAFF)
-  isActive      Boolean   @default(true)
-  emailVerified DateTime?
-  image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  barangay      Barangay? @relation(fields: [barangayId], references: [id], onDelete: SetNull)
-  auditLogs     AuditLog[]
-  certificateRequests CertificateRequest[] @relation("CertificateRequestedBy")
-  approvedCertificates CertificateRequest[] @relation("CertificateApprovedBy")
-  createdAnnouncements Announcement[] @relation("AnnouncementCreatedBy")
+  id                            String                        @id @default(cuid())
+  barangayId                    String?
+  name                          String
+  email                         String                        @unique
+  passwordHash                  String
+  role                          Role                          @default(STAFF)
+  isActive                      Boolean                       @default(true)
+  emailVerified                 DateTime?
+  image                         String?
+  createdAt                     DateTime                      @default(now())
+  updatedAt                     DateTime                      @updatedAt
+  barangay                      Barangay?                     @relation(fields: [barangayId], references: [id], onDelete: SetNull)
+  auditLogs                     AuditLog[]
+  certificateRequests           CertificateRequest[]          @relation("CertificateRequestedBy")
+  approvedCertificates          CertificateRequest[]          @relation("CertificateApprovedBy")
+  createdAnnouncements          Announcement[]                @relation("AnnouncementCreatedBy")
   reviewedResidentVerifications ResidentVerificationRequest[]
+  residentImportSessions        ResidentImportSession[]
 
   @@index([barangayId])
   @@index([role])
@@ -160,33 +163,33 @@ model Household {
 }
 
 model Resident {
-  id               String    @id @default(cuid())
-  barangayId       String
-  householdId      String?
-  firstName        String
-  middleName       String?
-  lastName         String
-  suffix           String?
-  birthDate        DateTime?
-  gender           String?
-  civilStatus      String?
-  contactNumber    String?
-  occupation       String?
-  citizenship      String       @default("Filipino")
-  addressLine      String
-  addressBarangay  String?
-  city             String?
-  province         String?
-  purok            String?
-  isActive         Boolean   @default(true)
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  barangay         Barangay  @relation(fields: [barangayId], references: [id], onDelete: Cascade)
-  household        Household? @relation("HouseholdMembers", fields: [householdId], references: [id], onDelete: SetNull)
-  headedHouseholds Household[] @relation("HouseholdHead")
-  certificateRequests CertificateRequest[]
-  publicRequests   PublicDocumentRequest[]
-  residentAccounts ResidentAccount[]
+  id                           String                        @id @default(cuid())
+  barangayId                   String
+  householdId                  String?
+  firstName                    String
+  middleName                   String?
+  lastName                     String
+  suffix                       String?
+  birthDate                    DateTime?
+  gender                       String?
+  civilStatus                  String?
+  contactNumber                String?
+  occupation                   String?
+  citizenship                  String                        @default("Filipino")
+  addressLine                  String
+  addressBarangay              String?
+  city                         String?
+  province                     String?
+  purok                        String?
+  isActive                     Boolean                       @default(true)
+  createdAt                    DateTime                      @default(now())
+  updatedAt                    DateTime                      @updatedAt
+  barangay                     Barangay                      @relation(fields: [barangayId], references: [id], onDelete: Cascade)
+  household                    Household?                    @relation("HouseholdMembers", fields: [householdId], references: [id], onDelete: SetNull)
+  headedHouseholds             Household[]                   @relation("HouseholdHead")
+  certificateRequests          CertificateRequest[]
+  publicRequests               PublicDocumentRequest[]
+  residentAccounts             ResidentAccount[]
   residentVerificationRequests ResidentVerificationRequest[]
 
   @@index([barangayId])
@@ -195,24 +198,24 @@ model Resident {
 }
 
 model CertificateRequest {
-  id             String            @id @default(cuid())
-  barangayId     String
-  residentId     String?
-  requestedById  String?
-  approvedById   String?
+  id              String            @id @default(cuid())
+  barangayId      String
+  residentId      String?
+  requestedById   String?
+  approvedById    String?
   certificateType CertificateType
-  status         CertificateStatus @default(DRAFT)
-  purpose        String?
-  remarks        String?
-  controlNumber  String?
-  issuedAt       DateTime?
-  releasedAt     DateTime?
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-  barangay       Barangay          @relation(fields: [barangayId], references: [id], onDelete: Cascade)
-  resident       Resident?         @relation(fields: [residentId], references: [id], onDelete: SetNull)
-  requestedBy    User?             @relation("CertificateRequestedBy", fields: [requestedById], references: [id], onDelete: SetNull)
-  approvedBy     User?             @relation("CertificateApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  status          CertificateStatus @default(DRAFT)
+  purpose         String?
+  remarks         String?
+  controlNumber   String?
+  issuedAt        DateTime?
+  releasedAt      DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  barangay        Barangay          @relation(fields: [barangayId], references: [id], onDelete: Cascade)
+  resident        Resident?         @relation(fields: [residentId], references: [id], onDelete: SetNull)
+  requestedBy     User?             @relation("CertificateRequestedBy", fields: [requestedById], references: [id], onDelete: SetNull)
+  approvedBy      User?             @relation("CertificateApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
 
   @@unique([barangayId, controlNumber])
   @@index([barangayId])
@@ -221,33 +224,33 @@ model CertificateRequest {
 }
 
 model PublicDocumentRequest {
-  id              String              @id @default(cuid())
-  barangayId      String
-  residentId      String?
-  firstName       String
-  middleName      String?
-  lastName        String
-  suffix          String?
-  birthDate       DateTime?
-  requesterName   String
-  requesterEmail  String?
-  requesterMobile String
+  id                String              @id @default(cuid())
+  barangayId        String
+  residentId        String?
+  firstName         String
+  middleName        String?
+  lastName          String
+  suffix            String?
+  birthDate         DateTime?
+  requesterName     String
+  requesterEmail    String?
+  requesterMobile   String
   residentAccountId String?
-  certificateType CertificateType
-  status          PublicRequestStatus @default(SUBMITTED)
-  purpose         String?
-  addressLine     String
-  purok           String?
-  notes           String?
-  trackingCode    String              @unique
-  submittedAt     DateTime            @default(now())
-  reviewedAt      DateTime?
-  completedAt     DateTime?
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
-  barangay        Barangay            @relation(fields: [barangayId], references: [id], onDelete: Cascade)
-  resident        Resident?           @relation(fields: [residentId], references: [id], onDelete: SetNull)
-  residentAccount ResidentAccount?    @relation(fields: [residentAccountId], references: [id], onDelete: SetNull)
+  certificateType   CertificateType
+  status            PublicRequestStatus @default(SUBMITTED)
+  purpose           String?
+  addressLine       String
+  purok             String?
+  notes             String?
+  trackingCode      String              @unique
+  submittedAt       DateTime            @default(now())
+  reviewedAt        DateTime?
+  completedAt       DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  barangay          Barangay            @relation(fields: [barangayId], references: [id], onDelete: Cascade)
+  resident          Resident?           @relation(fields: [residentId], references: [id], onDelete: SetNull)
+  residentAccount   ResidentAccount?    @relation(fields: [residentAccountId], references: [id], onDelete: SetNull)
 
   @@index([barangayId])
   @@index([residentId])
@@ -256,7 +259,7 @@ model PublicDocumentRequest {
 }
 
 model ResidentAccount {
-  id                   String                  @id @default(cuid())
+  id                   String                        @id @default(cuid())
   barangayId           String
   residentId           String?
   firstName            String
@@ -270,12 +273,12 @@ model ResidentAccount {
   passwordHash         String
   addressLine          String
   purok                String?
-  status               ResidentAccountStatus   @default(PENDING_VERIFICATION)
+  status               ResidentAccountStatus         @default(PENDING_VERIFICATION)
   verifiedAt           DateTime?
-  createdAt            DateTime                @default(now())
-  updatedAt            DateTime                @updatedAt
-  barangay             Barangay                @relation(fields: [barangayId], references: [id], onDelete: Cascade)
-  resident             Resident?               @relation(fields: [residentId], references: [id], onDelete: SetNull)
+  createdAt            DateTime                      @default(now())
+  updatedAt            DateTime                      @updatedAt
+  barangay             Barangay                      @relation(fields: [barangayId], references: [id], onDelete: Cascade)
+  resident             Resident?                     @relation(fields: [residentId], references: [id], onDelete: SetNull)
   verificationRequests ResidentVerificationRequest[]
   publicRequests       PublicDocumentRequest[]
 
@@ -286,22 +289,22 @@ model ResidentAccount {
 }
 
 model ResidentVerificationRequest {
-  id              String                @id @default(cuid())
-  barangayId      String
-  accountId       String
-  residentId      String?
-  status          ResidentAccountStatus @default(PENDING_VERIFICATION)
-  purpose         String?
-  staffNotes      String?
-  reviewedById    String?
-  submittedAt     DateTime              @default(now())
-  reviewedAt      DateTime?
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
-  barangay        Barangay              @relation(fields: [barangayId], references: [id], onDelete: Cascade)
-  account         ResidentAccount       @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  resident        Resident?             @relation(fields: [residentId], references: [id], onDelete: SetNull)
-  reviewedBy      User?                 @relation(fields: [reviewedById], references: [id], onDelete: SetNull)
+  id           String                @id @default(cuid())
+  barangayId   String
+  accountId    String
+  residentId   String?
+  status       ResidentAccountStatus @default(PENDING_VERIFICATION)
+  purpose      String?
+  staffNotes   String?
+  reviewedById String?
+  submittedAt  DateTime              @default(now())
+  reviewedAt   DateTime?
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  barangay     Barangay              @relation(fields: [barangayId], references: [id], onDelete: Cascade)
+  account      ResidentAccount       @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  resident     Resident?             @relation(fields: [residentId], references: [id], onDelete: SetNull)
+  reviewedBy   User?                 @relation(fields: [reviewedById], references: [id], onDelete: SetNull)
 
   @@index([barangayId])
   @@index([accountId])
@@ -338,7 +341,7 @@ model BarangaySetting {
 }
 
 model AuditLog {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   barangayId String?
   userId     String?
   action     String
@@ -347,7 +350,7 @@ model AuditLog {
   metadata   Json?
   ipAddress  String?
   userAgent  String?
-  createdAt  DateTime @default(now())
+  createdAt  DateTime  @default(now())
   barangay   Barangay? @relation(fields: [barangayId], references: [id], onDelete: Cascade)
   user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
 
@@ -356,21 +359,63 @@ model AuditLog {
   @@index([action])
 }
 
-model Announcement {
-  id          String    @id @default(cuid())
+model RateLimitBucket {
+  action      String
+  keyHash     String
+  windowStart DateTime
+  count       Int      @default(1)
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@id([action, keyHash, windowStart])
+  @@index([expiresAt])
+}
+
+model ResidentImportSession {
+  id          String    @id @default(uuid())
   barangayId  String
-  title       String
-  body        String
-  category    String?
-  featuredImageUrl String?
-  attachmentUrl String?
-  isPublished Boolean   @default(false)
-  publishedAt DateTime?
-  createdById String?
+  userId      String
+  fileName    String
+  headers     Json
+  rows        Json
+  mappings    Json?
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  expiresAt   DateTime
+  completedAt DateTime?
   barangay    Barangay  @relation(fields: [barangayId], references: [id], onDelete: Cascade)
-  createdBy   User?     @relation("AnnouncementCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@index([barangayId, userId])
+}
+
+model ResidentImportMappingPreference {
+  barangayId       String
+  normalizedHeader String
+  residentField    String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  barangay         Barangay @relation(fields: [barangayId], references: [id], onDelete: Cascade)
+
+  @@id([barangayId, normalizedHeader])
+}
+
+model Announcement {
+  id               String    @id @default(cuid())
+  barangayId       String
+  title            String
+  body             String
+  category         String?
+  featuredImageUrl String?
+  attachmentUrl    String?
+  isPublished      Boolean   @default(false)
+  publishedAt      DateTime?
+  createdById      String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  barangay         Barangay  @relation(fields: [barangayId], references: [id], onDelete: Cascade)
+  createdBy        User?     @relation("AnnouncementCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
   @@index([barangayId])
   @@index([barangayId, isPublished])
@@ -396,7 +441,7 @@ model PublicOfficial {
 
 model PublicService {
   id             String   @id @default(cuid())
-  barangayId      String
+  barangayId     String
   name           String
   description    String
   requirements   String?

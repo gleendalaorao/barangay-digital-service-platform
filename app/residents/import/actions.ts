@@ -34,7 +34,7 @@ export async function analyzeResidentImportAction(_state: ResidentImportState, f
       return { error: "Upload an Excel or CSV file." };
     }
 
-    const mappingSession = await analyzeResidentImportFile(file, session.barangayId);
+    const mappingSession = await analyzeResidentImportFile(file, session.barangayId, session.userId);
     return { mappingSession };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Unable to analyze resident import file." };
@@ -56,7 +56,7 @@ export async function previewResidentImportAction(_state: ResidentImportState, f
       return { error: "Upload and analyze a file before previewing records." };
     }
 
-    const preview = await previewResidentImportFromMapping(sessionId, mappings, session.barangayId);
+    const preview = await previewResidentImportFromMapping(sessionId, mappings, session.barangayId, session.userId);
     return { preview };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Unable to preview resident import." };
@@ -71,14 +71,13 @@ export async function importResidentRowsAction(_state: ResidentImportState, form
       return { error: "Only barangay admins and secretaries can import residents." };
     }
 
-    const payload = String(formData.get("payload") ?? "");
+    const sessionId = String(formData.get("sessionId") ?? "");
 
-    if (!payload) {
+    if (!sessionId) {
       return { error: "Preview the import file before saving." };
     }
 
-    const preview = JSON.parse(payload) as ResidentImportPreview;
-    const result = await importResidentRows(preview.rows, session.barangayId);
+    const { preview, result } = await importResidentRows(sessionId, session.barangayId, session.userId);
 
     await logAuditEvent({
       barangayId: session.barangayId,
