@@ -1,3 +1,4 @@
+import { Role } from "@prisma/client";
 import { getEffectiveSession } from "@/lib/platform/workspace";
 
 export async function requireBarangaySettingsSession() {
@@ -9,6 +10,10 @@ export async function requireBarangaySettingsSession() {
 
   if (!session.user.barangayId) {
     throw new Error("BARANGAY_SETTINGS_CONTEXT_REQUIRED");
+  }
+
+  if (session.user.role !== Role.ADMIN) {
+    throw new Error("BARANGAY_SETTINGS_ADMIN_REQUIRED");
   }
 
   return {
@@ -25,6 +30,10 @@ export function getBarangaySettingsAccessMessage(error: unknown) {
 
   if (error instanceof Error && error.message === "UNAUTHENTICATED") {
     return "Sign in with a barangay account to edit barangay settings.";
+  }
+
+  if (error instanceof Error && error.message === "BARANGAY_SETTINGS_ADMIN_REQUIRED") {
+    return "Only barangay admins can edit barangay settings.";
   }
 
   return "Barangay settings are unavailable right now.";

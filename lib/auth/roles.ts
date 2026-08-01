@@ -10,10 +10,6 @@ export function isBarangayRole(role?: Role | null) {
   return Boolean(role && barangayRoles.has(role));
 }
 
-export function canManageBarangayUsers(role?: Role | null) {
-  return role === Role.ADMIN || role === Role.CAPTAIN;
-}
-
 export function canApproveCertificates(role?: Role | null) {
   return role === Role.ADMIN || role === Role.CAPTAIN;
 }
