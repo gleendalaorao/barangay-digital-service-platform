@@ -11,6 +11,7 @@ const protectedPathPrefixes = [
   "/requests",
   "/residents",
   "/resident-verifications",
+  "/search",
   "/settings",
   "/users",
   "/website",

@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -12,9 +13,26 @@ type AuditEventInput = {
   ipAddress?: string | null;
 };
 
+async function resolveIpAddress(): Promise<string | null> {
+  try {
+    const headerList = await headers();
+    const forwardedFor = headerList.get("x-forwarded-for");
+
+    if (forwardedFor) {
+      const [first] = forwardedFor.split(",");
+      return first?.trim() || null;
+    }
+
+    return headerList.get("x-real-ip");
+  } catch {
+    return null;
+  }
+}
+
 export async function logAuditEvent(input: AuditEventInput) {
   try {
     const session = input.userId ? null : await auth();
+    const ipAddress = input.ipAddress ?? (await resolveIpAddress());
 
     await prisma.auditLog.create({
       data: {
@@ -23,7 +41,7 @@ export async function logAuditEvent(input: AuditEventInput) {
         action: input.action,
         entity: input.entity,
         entityId: input.entityId ?? null,
-        ipAddress: input.ipAddress ?? null,
+        ipAddress,
         metadata: {
           ...(input.metadata ?? {}),
           description: input.description,

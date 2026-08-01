@@ -2,12 +2,26 @@ import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { BlobUploadForm } from "@/components/uploads/blob-upload-form";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { getAnnouncementAccessMessage } from "@/lib/announcements/access";
 import { prisma } from "@/lib/prisma";
 import { canManageWebsiteContent, requireWebsiteSession } from "@/lib/website/access";
 import { savePublicOfficial } from "../actions";
 
 export default async function WebsiteOfficialsPage() {
-  const session = await requireWebsiteSession();
+  let session: Awaited<ReturnType<typeof requireWebsiteSession>>;
+
+  try {
+    session = await requireWebsiteSession();
+  } catch (error) {
+    return (
+      <DashboardShell>
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
+          <AccessNotice message={getAnnouncementAccessMessage(error)} />
+        </div>
+      </DashboardShell>
+    );
+  }
+
   const canManage = canManageWebsiteContent(session.role);
   const officials = await prisma.publicOfficial.findMany({
     where: { barangayId: session.barangayId },

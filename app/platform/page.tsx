@@ -6,7 +6,7 @@ import { StatCard } from "@/components/ui/stat-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { prisma } from "@/lib/prisma";
 import { formatPlatformAddress, formatPlatformDate } from "@/lib/platform/format";
-import { requirePlatformAdmin } from "@/lib/platform/workspace";
+import { getPlatformAccessMessage, requirePlatformAdmin } from "@/lib/platform/workspace";
 
 export default async function PlatformDashboardPage() {
   try {
@@ -116,12 +116,4 @@ function PlatformFrame({ children, action }: { children: React.ReactNode; action
 
 function AccessNotice({ message }: { message: string }) {
   return <div className="rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">{message}</div>;
-}
-
-function getPlatformAccessMessage(error: unknown) {
-  if (error instanceof Error && error.message === "UNAUTHENTICATED") {
-    return "Sign in as a platform administrator to view this workspace.";
-  }
-
-  return "Only platform administrators can view this workspace.";
 }

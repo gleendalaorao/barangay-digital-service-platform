@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { AnnouncementForm } from "@/components/announcements/announcement-form";
 import { PageHeader } from "@/components/ui/page-header";
+import { getAnnouncementAccessMessage } from "@/lib/announcements/access";
 import { prisma } from "@/lib/prisma";
 import { canManageWebsiteContent, requireWebsiteSession } from "@/lib/website/access";
 import { updateAnnouncement } from "@/app/announcements/actions";
@@ -10,7 +11,20 @@ type Props = { params: Promise<{ id: string }> };
 
 export default async function EditWebsiteAnnouncementPage({ params }: Props) {
   const { id } = await params;
-  const session = await requireWebsiteSession();
+  let session: Awaited<ReturnType<typeof requireWebsiteSession>>;
+
+  try {
+    session = await requireWebsiteSession();
+  } catch (error) {
+    return (
+      <DashboardShell>
+        <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
+          <AccessNotice message={getAnnouncementAccessMessage(error)} />
+        </div>
+      </DashboardShell>
+    );
+  }
+
   const announcement = await prisma.announcement.findFirst({
     where: { id, barangayId: session.barangayId },
     select: { title: true, body: true, category: true, featuredImageUrl: true, attachmentUrl: true, isPublished: true, publishedAt: true },

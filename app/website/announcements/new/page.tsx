@@ -1,11 +1,24 @@
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { AnnouncementForm } from "@/components/announcements/announcement-form";
 import { PageHeader } from "@/components/ui/page-header";
+import { getAnnouncementAccessMessage } from "@/lib/announcements/access";
 import { canManageWebsiteContent, requireWebsiteSession } from "@/lib/website/access";
 import { createAnnouncement } from "@/app/announcements/actions";
 
 export default async function NewWebsiteAnnouncementPage() {
-  const session = await requireWebsiteSession();
+  let session: Awaited<ReturnType<typeof requireWebsiteSession>>;
+
+  try {
+    session = await requireWebsiteSession();
+  } catch (error) {
+    return (
+      <DashboardShell>
+        <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
+          <AccessNotice message={getAnnouncementAccessMessage(error)} />
+        </div>
+      </DashboardShell>
+    );
+  }
 
   return (
     <DashboardShell>

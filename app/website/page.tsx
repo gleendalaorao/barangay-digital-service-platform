@@ -3,6 +3,7 @@ import { Megaphone, Settings, UserRound, Wrench } from "lucide-react";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { ActionCard } from "@/components/ui/action-card";
 import { PageHeader } from "@/components/ui/page-header";
+import { getAnnouncementAccessMessage } from "@/lib/announcements/access";
 import { requireWebsiteSession } from "@/lib/website/access";
 
 const cards = [
@@ -14,7 +15,17 @@ const cards = [
 ];
 
 export default async function WebsitePage() {
-  await requireWebsiteSession();
+  try {
+    await requireWebsiteSession();
+  } catch (error) {
+    return (
+      <DashboardShell>
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
+          <AccessNotice message={getAnnouncementAccessMessage(error)} />
+        </div>
+      </DashboardShell>
+    );
+  }
 
   return (
     <DashboardShell>
@@ -35,4 +46,8 @@ export default async function WebsitePage() {
       </div>
     </DashboardShell>
   );
+}
+
+function AccessNotice({ message }: { message: string }) {
+  return <div className="rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">{message}</div>;
 }

@@ -54,6 +54,14 @@ export async function requirePlatformAdmin() {
   return session.user;
 }
 
+export function getPlatformAccessMessage(error: unknown) {
+  if (error instanceof Error && error.message === "UNAUTHENTICATED") {
+    return "Sign in as a platform administrator to view this workspace.";
+  }
+
+  return "Only platform administrators can view this workspace.";
+}
+
 export async function getSelectedWorkspace() {
   const session = await auth();
 

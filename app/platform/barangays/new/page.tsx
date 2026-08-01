@@ -1,11 +1,21 @@
 import Link from "next/link";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { PageHeader } from "@/components/ui/page-header";
-import { requirePlatformAdmin } from "@/lib/platform/workspace";
+import { getPlatformAccessMessage, requirePlatformAdmin } from "@/lib/platform/workspace";
 import { createBarangayTenant } from "../../actions";
 
 export default async function NewBarangayTenantPage() {
-  await requirePlatformAdmin();
+  try {
+    await requirePlatformAdmin();
+  } catch (error) {
+    return (
+      <DashboardShell>
+        <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
+          <AccessNotice message={getPlatformAccessMessage(error)} />
+        </div>
+      </DashboardShell>
+    );
+  }
 
   return (
     <DashboardShell>
@@ -80,4 +90,8 @@ function Field({
       />
     </label>
   );
+}
+
+function AccessNotice({ message }: { message: string }) {
+  return <div className="rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">{message}</div>;
 }

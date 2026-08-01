@@ -5,13 +5,27 @@ import { DataTable } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { getAnnouncementAccessMessage } from "@/lib/announcements/access";
 import { formatDateTime } from "@/lib/certificates/format";
 import { prisma } from "@/lib/prisma";
 import { canManageWebsiteContent, canPublishWebsiteContent, requireWebsiteSession } from "@/lib/website/access";
 import { setAnnouncementPublished } from "@/app/announcements/actions";
 
 export default async function WebsiteAnnouncementsPage() {
-  const session = await requireWebsiteSession();
+  let session: Awaited<ReturnType<typeof requireWebsiteSession>>;
+
+  try {
+    session = await requireWebsiteSession();
+  } catch (error) {
+    return (
+      <DashboardShell>
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
+          <AccessNotice message={getAnnouncementAccessMessage(error)} />
+        </div>
+      </DashboardShell>
+    );
+  }
+
   const canManage = canManageWebsiteContent(session.role);
   const canPublish = canPublishWebsiteContent(session.role);
   const announcements = await prisma.announcement.findMany({
@@ -88,4 +102,8 @@ export default async function WebsiteAnnouncementsPage() {
       </div>
     </DashboardShell>
   );
+}
+
+function AccessNotice({ message }: { message: string }) {
+  return <div className="rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">{message}</div>;
 }

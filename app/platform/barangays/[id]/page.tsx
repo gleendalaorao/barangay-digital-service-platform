@@ -7,7 +7,7 @@ import { StatCard } from "@/components/ui/stat-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { prisma } from "@/lib/prisma";
 import { formatPlatformAddress, formatPlatformDate } from "@/lib/platform/format";
-import { requirePlatformAdmin } from "@/lib/platform/workspace";
+import { getPlatformAccessMessage, requirePlatformAdmin } from "@/lib/platform/workspace";
 import { openBarangayWorkspace, updateBarangayTenant } from "../../actions";
 
 type BarangayDetailPageProps = {
@@ -16,7 +16,18 @@ type BarangayDetailPageProps = {
 };
 
 export default async function BarangayDetailPage({ params, searchParams }: BarangayDetailPageProps) {
-  await requirePlatformAdmin();
+  try {
+    await requirePlatformAdmin();
+  } catch (error) {
+    return (
+      <DashboardShell>
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
+          <AccessNotice message={getPlatformAccessMessage(error)} />
+        </div>
+      </DashboardShell>
+    );
+  }
+
   const { id } = await params;
   const flags = await searchParams;
 
@@ -138,6 +149,10 @@ export default async function BarangayDetailPage({ params, searchParams }: Baran
 
 function Notice({ message }: { message: string }) {
   return <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">{message}</div>;
+}
+
+function AccessNotice({ message }: { message: string }) {
+  return <div className="rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">{message}</div>;
 }
 
 function Field({
