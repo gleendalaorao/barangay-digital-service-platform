@@ -7,10 +7,12 @@ import { submitResidentSignup } from "../resident/actions";
 
 type ResidentSignupPageProps = {
   params: Promise<{ barangaySlug: string }>;
+  searchParams: Promise<{ rateLimited?: string }>;
 };
 
-export default async function ResidentSignupPage({ params }: ResidentSignupPageProps) {
+export default async function ResidentSignupPage({ params, searchParams }: ResidentSignupPageProps) {
   const { barangaySlug } = await params;
+  const { rateLimited } = await searchParams;
   const barangay = await prisma.barangay.findUnique({
     where: { slug: barangaySlug },
     select: { name: true, slug: true, municipality: true, province: true },
@@ -38,6 +40,8 @@ export default async function ResidentSignupPage({ params }: ResidentSignupPageP
             </div>
           </div>
         </section>
+
+        {rateLimited ? <RateLimitAlert retryAfter={rateLimited} /> : null}
 
         <form action={submitResidentSignup.bind(null, barangay.slug)} className="space-y-6">
           <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -73,6 +77,12 @@ export default async function ResidentSignupPage({ params }: ResidentSignupPageP
       </div>
     </main>
   );
+}
+
+function RateLimitAlert({ retryAfter }: { retryAfter: string }) {
+  const seconds = Number(retryAfter);
+  const minutes = Number.isFinite(seconds) ? Math.max(1, Math.ceil(seconds / 60)) : 60;
+  return <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">Too many submissions. Try again in {minutes} minute{minutes === 1 ? "" : "s"}.</div>;
 }
 
 function PublicHeader({ barangayName, slug }: { barangayName: string; slug: string }) {

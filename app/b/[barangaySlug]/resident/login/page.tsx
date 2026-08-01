@@ -7,10 +7,12 @@ import { loginResident } from "../actions";
 
 type ResidentLoginPageProps = {
   params: Promise<{ barangaySlug: string }>;
+  searchParams: Promise<{ rateLimited?: string }>;
 };
 
-export default async function ResidentLoginPage({ params }: ResidentLoginPageProps) {
+export default async function ResidentLoginPage({ params, searchParams }: ResidentLoginPageProps) {
   const { barangaySlug } = await params;
+  const { rateLimited } = await searchParams;
   const barangay = await prisma.barangay.findUnique({
     where: { slug: barangaySlug },
     select: { name: true, slug: true },
@@ -45,6 +47,7 @@ export default async function ResidentLoginPage({ params }: ResidentLoginPagePro
             </div>
           </div>
         </section>
+        {rateLimited ? <RateLimitAlert retryAfter={rateLimited} /> : null}
         <form action={loginResident.bind(null, barangay.slug)} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="space-y-4">
             <Field label="Email" name="email" type="email" required />
@@ -57,6 +60,12 @@ export default async function ResidentLoginPage({ params }: ResidentLoginPagePro
       </div>
     </main>
   );
+}
+
+function RateLimitAlert({ retryAfter }: { retryAfter: string }) {
+  const seconds = Number(retryAfter);
+  const minutes = Number.isFinite(seconds) ? Math.max(1, Math.ceil(seconds / 60)) : 15;
+  return <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">Too many attempts. Try again in {minutes} minute{minutes === 1 ? "" : "s"}.</div>;
 }
 
 function Field({ label, name, type = "text", required }: { label: string; name: string; type?: string; required?: boolean }) {

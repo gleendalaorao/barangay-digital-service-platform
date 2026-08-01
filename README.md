@@ -152,7 +152,7 @@ This project is prepared for later cloud deployment without subscriptions, billi
 1. Install dependencies with `npm install`.
 2. Copy `.env.example` to `.env`.
 3. Set `DATABASE_URL`, `AUTH_SECRET`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, and `APP_URL`.
-4. Run `npm run db:push` for a local demo database, or run Prisma migrations if your environment uses migration files.
+4. Run committed Prisma migrations with `npm run db:deploy`. Use `npm run db:push` only as a disposable local-development convenience.
 5. Run `npm run prisma:generate`.
 6. Seed demo data with `npm run db:seed`.
 7. Start the app with `npm run dev`.
@@ -185,12 +185,14 @@ Use production URLs for `NEXTAUTH_URL` and `APP_URL` in cloud environments. Do n
 - Keep separate databases or schemas for local development, demos, staging, and production.
 - Do not seed demo accounts into a real production barangay workspace.
 
-### Prisma Database Push and Migration Notes
+### Prisma Migration Workflow
 
-- For disposable demo environments, `npm run db:push` is acceptable to sync the Prisma schema quickly.
-- For production-like environments, prefer reviewed Prisma migrations and apply them during deployment.
+- All schema changes must be created locally with `npm run prisma:migrate -- --name <migration-name>` and the generated migration files must be committed.
+- Apply committed migrations to shared and production databases with `npm run db:deploy`.
+- `npm run db:push` is a disposable local-development convenience only. Never use it against a shared or production database.
 - Always run `npm run prisma:validate` and `npm run prisma:generate` after schema changes.
 - Confirm the target `DATABASE_URL` before running `db:push`, migrations, or seed commands.
+- Any production database, including Vercel-connected, Neon, or Supabase databases, must be baselined and verified independently before its first deployment. This migration investigation covered only the local development database.
 
 ### Seed Demo Data
 
@@ -208,7 +210,7 @@ The seed creates Barangay San Isidro demo records and login accounts. Do not run
 - Set `AUTH_SECRET` and `NEXTAUTH_SECRET`.
 - Set `NEXTAUTH_URL`.
 - Set `APP_URL`.
-- Run Prisma migration or `npm run db:push` against the target database.
+- Run `npm run db:deploy` against the target database.
 - Run `npm run db:seed` only for demo environments.
 - Verify staff login at `/login`.
 - Verify the public portal at `/b/san-isidro` or the deployed barangay slug.

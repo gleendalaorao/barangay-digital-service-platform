@@ -1,9 +1,11 @@
 import { CertificateStatus } from "@prisma/client";
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import { CheckCircle2, ShieldCheck, XCircle } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { formatCertificateStatus, formatCertificateType, formatDate, formatDateTime } from "@/lib/certificates/format";
 import { formatResidentName } from "@/lib/residents/format";
+import { checkRateLimit, formatRateLimitMessage, getRequestIp, RATE_LIMITS } from "@/lib/rate-limit";
 
 type VerifyPageProps = {
   params: Promise<{ certificateId: string }>;
@@ -11,6 +13,19 @@ type VerifyPageProps = {
 
 export default async function VerifyCertificatePage({ params }: VerifyPageProps) {
   const { certificateId } = await params;
+  const rateLimit = await checkRateLimit({
+    ...RATE_LIMITS.certificateVerification,
+    identifier: getRequestIp(await headers()),
+  });
+
+  if (!rateLimit.allowed) {
+    return (
+      <VerifyShell>
+        <ResultCard tone="neutral" title="Too many verification attempts." description={formatRateLimitMessage(rateLimit.retryAfterSeconds)} />
+      </VerifyShell>
+    );
+  }
+
   const certificate = await prisma.certificateRequest.findUnique({
     where: { id: certificateId },
     include: {

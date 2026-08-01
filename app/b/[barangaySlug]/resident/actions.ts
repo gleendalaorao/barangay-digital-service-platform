@@ -1,10 +1,12 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { ResidentAccountStatus } from "@prisma/client";
 import { logAuditEvent } from "@/lib/audit";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { prisma } from "@/lib/prisma";
+import { checkRateLimit, getRequestIp, RATE_LIMITS } from "@/lib/rate-limit";
 import { formatResidentAccountName } from "@/lib/resident-accounts/format";
 import { clearResidentSession, setResidentSession } from "@/lib/resident-accounts/session";
 import { residentLoginSchema, residentSignupSchema } from "@/lib/validation/resident-account";
@@ -34,6 +36,15 @@ function parseLoginForm(formData: FormData) {
 }
 
 export async function submitResidentSignup(barangaySlug: string, formData: FormData) {
+  const rateLimit = await checkRateLimit({
+    ...RATE_LIMITS.residentSignup,
+    identifier: getRequestIp(await headers()),
+  });
+
+  if (!rateLimit.allowed) {
+    redirect(`/b/${barangaySlug}/signup?rateLimited=${rateLimit.retryAfterSeconds}`);
+  }
+
   const barangay = await prisma.barangay.findUnique({
     where: { slug: barangaySlug },
     select: { id: true, name: true },
@@ -98,6 +109,15 @@ export async function submitResidentSignup(barangaySlug: string, formData: FormD
 }
 
 export async function loginResident(barangaySlug: string, formData: FormData) {
+  const rateLimit = await checkRateLimit({
+    ...RATE_LIMITS.residentLogin,
+    identifier: getRequestIp(await headers()),
+  });
+
+  if (!rateLimit.allowed) {
+    redirect(`/b/${barangaySlug}/resident/login?rateLimited=${rateLimit.retryAfterSeconds}`);
+  }
+
   const barangay = await prisma.barangay.findUnique({
     where: { slug: barangaySlug },
     select: { id: true },

@@ -1,13 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
 import { SearchCheck } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { formatBarangayDisplayName } from "@/lib/barangay-display";
-import { formatCertificateType, formatDateTime } from "@/lib/certificates/format";
-import {
-  formatPublicRequestStatus,
-  getPublicRequestInstruction,
-} from "@/lib/public-requests/format";
+import { TrackRequestForm } from "./track-request-form";
 
 type TrackPageProps = {
   params: Promise<{ barangaySlug: string }>;
@@ -26,19 +23,9 @@ export default async function TrackRequestPage({ params, searchParams }: TrackPa
     notFound();
   }
 
-  const requestNumber = toSingle(rawSearchParams.requestNumber) ?? "";
-  const contactNumber = toSingle(rawSearchParams.contactNumber) ?? "";
   const submitted = toSingle(rawSearchParams.submitted) === "1";
-  const request =
-    requestNumber && contactNumber
-      ? await prisma.publicDocumentRequest.findFirst({
-          where: {
-            barangayId: barangay.id,
-            trackingCode: requestNumber,
-            requesterMobile: contactNumber,
-          },
-        })
-      : null;
+  const cookieStore = await cookies();
+  const initialRequestNumber = submitted ? cookieStore.get("public_request_submission")?.value ?? "" : "";
 
   return (
     <main className="min-h-screen bg-slate-50">
@@ -71,50 +58,9 @@ export default async function TrackRequestPage({ params, searchParams }: TrackPa
           </div>
         </div>
 
-        <form className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm" action={`/b/${barangay.slug}/track`}>
-          <div className="grid gap-4 md:grid-cols-[1fr_1fr_auto]">
-            <label className="block">
-              <span className="text-sm font-medium text-ink-700">Request number</span>
-              <input name="requestNumber" defaultValue={requestNumber} required className="mt-1 h-11 w-full rounded-md border border-slate-200 px-3 text-sm" />
-            </label>
-            <label className="block">
-              <span className="text-sm font-medium text-ink-700">Contact number</span>
-              <input name="contactNumber" defaultValue={contactNumber} required className="mt-1 h-11 w-full rounded-md border border-slate-200 px-3 text-sm" />
-            </label>
-            <button type="submit" className="h-11 self-end rounded-md bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700">
-              Track
-            </button>
-          </div>
-        </form>
-
-        {request ? (
-          <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-950">Request Status</h2>
-            <dl className="mt-5 grid gap-4 sm:grid-cols-2">
-              <Info label="Request number" value={request.trackingCode} />
-              <Info label="Certificate type" value={formatCertificateType(request.certificateType)} />
-              <Info label="Status" value={formatPublicRequestStatus(request.status)} />
-              <Info label="Submitted date" value={formatDateTime(request.submittedAt)} />
-              <Info label="Instructions" value={getPublicRequestInstruction(request.status)} wide />
-              <Info label="Submitted notes" value={request.notes} wide />
-            </dl>
-          </section>
-        ) : requestNumber || contactNumber ? (
-          <div className="rounded-md border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
-            No request matched that request number and contact number for this barangay.
-          </div>
-        ) : null}
+        <TrackRequestForm barangaySlug={barangay.slug} initialRequestNumber={initialRequestNumber} />
       </div>
     </main>
-  );
-}
-
-function Info({ label, value, wide }: { label: string; value?: string | null; wide?: boolean }) {
-  return (
-    <div className={wide ? "sm:col-span-2" : ""}>
-      <dt className="text-xs font-semibold uppercase tracking-wide text-ink-500">{label}</dt>
-      <dd className="mt-1 text-sm text-ink-900">{value || "-"}</dd>
-    </div>
   );
 }
 

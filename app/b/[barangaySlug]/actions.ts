@@ -1,9 +1,11 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { cookies, headers } from "next/headers";
 import { ResidentAccountStatus } from "@prisma/client";
 import { generatePublicRequestNumber } from "@/lib/public-requests/control-number";
 import { prisma } from "@/lib/prisma";
+import { checkRateLimit, getRequestIp, RATE_LIMITS } from "@/lib/rate-limit";
 import { formatPublicRequesterName } from "@/lib/public-requests/format";
 import { getResidentSession } from "@/lib/resident-accounts/session";
 import { publicRequestSchema } from "@/lib/validation/public-request";
@@ -26,6 +28,15 @@ function parsePublicRequestForm(formData: FormData) {
 }
 
 export async function createPublicRequest(barangaySlug: string, formData: FormData) {
+  const rateLimit = await checkRateLimit({
+    ...RATE_LIMITS.publicRequest,
+    identifier: getRequestIp(await headers()),
+  });
+
+  if (!rateLimit.allowed) {
+    redirect(`/b/${barangaySlug}/request?rateLimited=${rateLimit.retryAfterSeconds}`);
+  }
+
   const barangay = await prisma.barangay.findUnique({
     where: {
       slug: barangaySlug,
@@ -69,5 +80,14 @@ export async function createPublicRequest(barangaySlug: string, formData: FormDa
     },
   });
 
-  redirect(`/b/${barangaySlug}/track?submitted=1&requestNumber=${encodeURIComponent(trackingCode)}`);
+  const cookieStore = await cookies();
+  cookieStore.set("public_request_submission", trackingCode, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: `/b/${barangaySlug}/track`,
+    maxAge: 5 * 60,
+  });
+
+  redirect(`/b/${barangaySlug}/track?submitted=1`);
 }

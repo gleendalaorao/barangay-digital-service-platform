@@ -10,10 +10,12 @@ import { createPublicRequest } from "../actions";
 
 type PublicRequestPageProps = {
   params: Promise<{ barangaySlug: string }>;
+  searchParams: Promise<{ rateLimited?: string }>;
 };
 
-export default async function PublicRequestPage({ params }: PublicRequestPageProps) {
+export default async function PublicRequestPage({ params, searchParams }: PublicRequestPageProps) {
   const { barangaySlug } = await params;
+  const { rateLimited } = await searchParams;
   const barangay = await prisma.barangay.findUnique({
     where: { slug: barangaySlug },
     select: { name: true, slug: true, municipality: true, province: true },
@@ -44,6 +46,7 @@ export default async function PublicRequestPage({ params }: PublicRequestPagePro
             </div>
           </div>
         </div>
+        {rateLimited ? <RateLimitAlert retryAfter={rateLimited} /> : null}
         <form action={createPublicRequest.bind(null, barangay.slug)} className="space-y-6">
           <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-lg font-semibold text-slate-950">Requested Document</h2>
@@ -95,6 +98,12 @@ export default async function PublicRequestPage({ params }: PublicRequestPagePro
       </div>
     </main>
   );
+}
+
+function RateLimitAlert({ retryAfter }: { retryAfter: string }) {
+  const seconds = Number(retryAfter);
+  const minutes = Number.isFinite(seconds) ? Math.max(1, Math.ceil(seconds / 60)) : 60;
+  return <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">Too many submissions. Try again in {minutes} minute{minutes === 1 ? "" : "s"}.</div>;
 }
 
 function PublicHeader({ barangayName, slug }: { barangayName: string; slug: string }) {

@@ -98,7 +98,7 @@ export default async function ResidentDashboardPage({ params, searchParams }: Re
                 {account.publicRequests.map((request) => (
                   <Link
                     key={request.trackingCode}
-                    href={`/b/${account.barangay.slug}/track?requestNumber=${encodeURIComponent(request.trackingCode)}`}
+                    href={`/b/${account.barangay.slug}/track`}
                     className="block rounded-md border border-slate-200 bg-slate-50 p-3 text-sm transition hover:border-emerald-200 hover:bg-emerald-50"
                   >
                     <div className="flex items-center justify-between gap-3">

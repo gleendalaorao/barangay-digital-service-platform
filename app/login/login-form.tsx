@@ -34,6 +34,13 @@ export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
 
     setLoading(false);
 
+    if (result?.status === 429) {
+      const retryAfterSeconds = Number(result.code);
+      const minutes = Number.isFinite(retryAfterSeconds) ? Math.max(1, Math.ceil(retryAfterSeconds / 60)) : 15;
+      setError(`Too many attempts. Try again in ${minutes} minute${minutes === 1 ? "" : "s"}.`);
+      return;
+    }
+
     if (result?.error) {
       setError("Invalid email or password.");
       return;

@@ -103,10 +103,10 @@ export async function submitCertificateForApproval(formData: FormData) {
   await logAuditEvent({
     barangayId: session.barangayId,
     userId: session.userId,
-    action: "CERTIFICATE_APPROVED",
+    action: "CERTIFICATE_SUBMITTED",
     entity: "CertificateRequest",
     entityId: id,
-    description: "Approved certificate request.",
+    description: "Submitted certificate for approval.",
   });
 
   revalidateCertificate(id);
@@ -136,10 +136,10 @@ export async function approveCertificate(formData: FormData) {
   await logAuditEvent({
     barangayId: session.barangayId,
     userId: session.userId,
-    action: "CERTIFICATE_RELEASED",
+    action: "CERTIFICATE_APPROVED",
     entity: "CertificateRequest",
     entityId: id,
-    description: "Marked certificate as released.",
+    description: "Approved certificate request.",
   });
 
   revalidateCertificate(id);
@@ -168,10 +168,10 @@ export async function releaseCertificate(formData: FormData) {
   await logAuditEvent({
     barangayId: session.barangayId,
     userId: session.userId,
-    action: "CERTIFICATE_CANCELLED",
+    action: "CERTIFICATE_RELEASED",
     entity: "CertificateRequest",
     entityId: id,
-    description: "Cancelled certificate request.",
+    description: "Marked certificate as released.",
   });
 
   revalidateCertificate(id);
@@ -196,6 +196,15 @@ export async function cancelCertificate(formData: FormData) {
     data: {
       status: CertificateStatus.CANCELLED,
     },
+  });
+
+  await logAuditEvent({
+    barangayId: session.barangayId,
+    userId: session.userId,
+    action: "CERTIFICATE_CANCELLED",
+    entity: "CertificateRequest",
+    entityId: id,
+    description: "Cancelled certificate request.",
   });
 
   revalidateCertificate(id);
