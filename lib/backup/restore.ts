@@ -1,3 +1,4 @@
+import { CertificateStatus, CertificateType, PublicRequestStatus, Role } from "@prisma/client";
 import { parseBackupPackage, type BackupPackage } from "@/lib/backup/package";
 import { prisma } from "@/lib/prisma";
 
@@ -17,6 +18,8 @@ export async function restoreBackup({ barangayId, rawJson }: RestoreInput) {
   if (backup.barangay.id !== currentBarangay.id && backup.barangay.slug !== currentBarangay.slug) {
     throw new Error("This backup belongs to a different barangay tenant.");
   }
+
+  const validatedEnums = validateBackupEnums(backup);
 
   await prisma.$transaction(async (tx) => {
     const existingUsers = await tx.user.findMany({
@@ -56,7 +59,7 @@ export async function restoreBackup({ barangayId, rawJson }: RestoreInput) {
       });
     }
 
-    for (const user of backup.data.users) {
+    for (const [index, user] of backup.data.users.entries()) {
       if (!isObject(user) || typeof user.email !== "string") {
         continue;
       }
@@ -65,7 +68,7 @@ export async function restoreBackup({ barangayId, rawJson }: RestoreInput) {
         where: { barangayId, email: user.email },
         data: {
           name: stringValue(user.name) ?? user.email,
-          role: enumValue(user.role) as never,
+          role: validatedEnums.userRoles[index],
           isActive: booleanValue(user.isActive) ?? true,
           image: nullableStringValue(user.image),
         },
@@ -150,7 +153,7 @@ export async function restoreBackup({ barangayId, rawJson }: RestoreInput) {
       }
     }
 
-    for (const certificate of backup.data.certificates) {
+    for (const [index, certificate] of backup.data.certificates.entries()) {
       const residentId = nullableStringValue(certificate.residentId);
       const requestedById = nullableStringValue(certificate.requestedById);
       const approvedById = nullableStringValue(certificate.approvedById);
@@ -162,8 +165,8 @@ export async function restoreBackup({ barangayId, rawJson }: RestoreInput) {
           residentId: residentId && residentIds.has(residentId) ? residentId : null,
           requestedById: requestedById && userIds.has(requestedById) ? requestedById : null,
           approvedById: approvedById && userIds.has(approvedById) ? approvedById : null,
-          certificateType: enumValue(certificate.certificateType) as never,
-          status: enumValue(certificate.status) as never,
+          certificateType: validatedEnums.certificateTypes[index],
+          status: validatedEnums.certificateStatuses[index],
           purpose: nullableStringValue(certificate.purpose),
           remarks: nullableStringValue(certificate.remarks),
           controlNumber: nullableStringValue(certificate.controlNumber),
@@ -175,7 +178,7 @@ export async function restoreBackup({ barangayId, rawJson }: RestoreInput) {
       });
     }
 
-    for (const request of backup.data.publicRequests) {
+    for (const [index, request] of backup.data.publicRequests.entries()) {
       const residentId = nullableStringValue(request.residentId);
 
       await tx.publicDocumentRequest.create({
@@ -191,8 +194,8 @@ export async function restoreBackup({ barangayId, rawJson }: RestoreInput) {
           requesterName: stringValue(request.requesterName) ?? "",
           requesterEmail: nullableStringValue(request.requesterEmail),
           requesterMobile: stringValue(request.requesterMobile) ?? "",
-          certificateType: enumValue(request.certificateType) as never,
-          status: enumValue(request.status) as never,
+          certificateType: validatedEnums.publicRequestCertificateTypes[index],
+          status: validatedEnums.publicRequestStatuses[index],
           purpose: nullableStringValue(request.purpose),
           addressLine: stringValue(request.addressLine) ?? "",
           purok: nullableStringValue(request.purok),
@@ -267,8 +270,41 @@ function booleanValue(value: unknown) {
   return typeof value === "boolean" ? value : undefined;
 }
 
-function enumValue(value: unknown) {
-  return typeof value === "string" ? value : undefined;
+function validateBackupEnums(backup: BackupPackage) {
+  return {
+    userRoles: backup.data.users.map((user, index) =>
+      validateEnumValue(isObject(user) ? user.role : undefined, Role, `users[${index}].role`),
+    ),
+    certificateTypes: backup.data.certificates.map((certificate, index) =>
+      validateEnumValue(certificate.certificateType, CertificateType, `certificates[${index}].certificateType`),
+    ),
+    certificateStatuses: backup.data.certificates.map((certificate, index) =>
+      validateEnumValue(certificate.status, CertificateStatus, `certificates[${index}].status`),
+    ),
+    publicRequestCertificateTypes: backup.data.publicRequests.map((request, index) =>
+      validateEnumValue(request.certificateType, CertificateType, `publicRequests[${index}].certificateType`),
+    ),
+    publicRequestStatuses: backup.data.publicRequests.map((request, index) =>
+      validateEnumValue(request.status, PublicRequestStatus, `publicRequests[${index}].status`),
+    ),
+  };
+}
+
+function validateEnumValue<T extends string>(
+  value: unknown,
+  enumObject: Record<string, T>,
+  fieldPath: string,
+): T {
+  const expectedValues = Object.values(enumObject);
+
+  if (typeof value === "string" && expectedValues.includes(value as T)) {
+    return value as T;
+  }
+
+  const rejectedValue = JSON.stringify(value) ?? String(value);
+  throw new Error(
+    `Invalid backup enum at ${fieldPath}: ${rejectedValue}. Expected one of: ${expectedValues.join(", ")}.`,
+  );
 }
 
 function nullableDateValue(value: unknown) {
