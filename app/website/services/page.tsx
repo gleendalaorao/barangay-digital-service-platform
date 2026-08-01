@@ -1,4 +1,5 @@
 import { DashboardShell } from "@/components/layout/dashboard-shell";
+import { BlobUploadForm } from "@/components/uploads/blob-upload-form";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { prisma } from "@/lib/prisma";
@@ -17,17 +18,23 @@ export default async function WebsiteServicesPage() {
     <DashboardShell>
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
         <PageHeader eyebrow="Website" title="Services" description="Manage public service descriptions, requirements, fees, and request links." />
-        {canManage ? <ServiceForm /> : <AccessNotice message="Staff can view services. Only admins and secretaries can edit them." />}
+        {canManage ? <ServiceForm barangayId={session.barangayId} /> : <AccessNotice message="Staff can view services. Only admins and secretaries can edit them." />}
         <section className="grid gap-4 xl:grid-cols-2">
           {services.map((service) => (
-            <form key={service.id} action={savePublicService} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <BlobUploadForm
+              key={service.id}
+              action={savePublicService}
+              barangayId={session.barangayId}
+              className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm"
+              uploadFields={[{ fileField: "attachmentFile", blobUrlField: "attachmentBlobUrl", folder: "services", kind: "document" }]}
+            >
               <input type="hidden" name="id" value={service.id} />
               <ServiceFields service={service} disabled={!canManage} />
               <div className="mt-4 flex items-center justify-between gap-3">
                 <StatusBadge tone={service.isPublished ? "success" : "neutral"}>{service.isPublished ? "Published" : "Hidden"}</StatusBadge>
                 {canManage ? <button className="rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white">Save</button> : null}
               </div>
-            </form>
+            </BlobUploadForm>
           ))}
         </section>
       </div>
@@ -35,13 +42,18 @@ export default async function WebsiteServicesPage() {
   );
 }
 
-function ServiceForm() {
+function ServiceForm({ barangayId }: { barangayId: string }) {
   return (
-    <form action={savePublicService} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+    <BlobUploadForm
+      action={savePublicService}
+      barangayId={barangayId}
+      className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm"
+      uploadFields={[{ fileField: "attachmentFile", blobUrlField: "attachmentBlobUrl", folder: "services", kind: "document" }]}
+    >
       <h2 className="text-base font-semibold text-slate-950">Add service</h2>
       <ServiceFields />
       <button className="mt-4 rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">Add Service</button>
-    </form>
+    </BlobUploadForm>
   );
 }
 

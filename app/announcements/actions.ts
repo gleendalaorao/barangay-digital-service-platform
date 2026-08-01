@@ -8,8 +8,8 @@ import {
   requireAnnouncementSession,
 } from "@/lib/announcements/access";
 import { logAuditEvent } from "@/lib/audit";
+import { verifyBlobUploadUrl } from "@/lib/blob/upload-policy";
 import { prisma } from "@/lib/prisma";
-import { hasUpload, storeUpload } from "@/lib/storage";
 import { announcementFormSchema } from "@/lib/validation/announcement";
 
 function parseAnnouncementForm(formData: FormData) {
@@ -43,14 +43,10 @@ export async function createAnnouncement(formData: FormData) {
   }
 
   const parsed = parseAnnouncementForm(formData);
-  const imageFile = formData.get("featuredImageFile");
-  const attachmentFile = formData.get("attachmentFile");
-  const featuredImageUrl = hasUpload(imageFile)
-    ? await storeUpload({ barangayId: session.barangayId, file: imageFile, kind: "image", folder: "announcements" })
-    : parsed.featuredImageUrl;
-  const attachmentUrl = hasUpload(attachmentFile)
-    ? await storeUpload({ barangayId: session.barangayId, file: attachmentFile, kind: "document", folder: "announcements" })
-    : parsed.attachmentUrl;
+  const uploadedImage = await readVerifiedBlob(formData, "featuredImageBlobUrl", session.barangayId, "image");
+  const uploadedAttachment = await readVerifiedBlob(formData, "attachmentBlobUrl", session.barangayId, "document");
+  const featuredImageUrl = uploadedImage?.url ?? parsed.featuredImageUrl;
+  const attachmentUrl = uploadedAttachment?.url ?? parsed.attachmentUrl;
   const announcement = await prisma.announcement.create({
     data: {
       barangayId: session.barangayId,
@@ -76,7 +72,7 @@ export async function createAnnouncement(formData: FormData) {
     entityId: announcement.id,
     description: `Created announcement "${parsed.title}".`,
   });
-  await logAnnouncementUploads(session.barangayId, session.userId, announcement.id, imageFile, attachmentFile);
+  await logAnnouncementUploads(session.barangayId, session.userId, announcement.id, Boolean(uploadedImage), Boolean(uploadedAttachment));
 
   revalidateAnnouncements();
   redirect(`${parsed.redirectBase}/${announcement.id}/edit?created=1`);
@@ -90,15 +86,15 @@ export async function updateAnnouncement(id: string, formData: FormData) {
   }
 
   const parsed = parseAnnouncementForm(formData);
-  const imageFile = formData.get("featuredImageFile");
-  const attachmentFile = formData.get("attachmentFile");
-  const featuredImageUrl = hasUpload(imageFile)
-    ? await storeUpload({ barangayId: session.barangayId, file: imageFile, kind: "image", folder: "announcements" })
+  const uploadedImage = await readVerifiedBlob(formData, "featuredImageBlobUrl", session.barangayId, "image");
+  const uploadedAttachment = await readVerifiedBlob(formData, "attachmentBlobUrl", session.barangayId, "document");
+  const featuredImageUrl = uploadedImage
+    ? uploadedImage.url
     : formData.get("removeFeaturedImage") === "on"
       ? null
       : parsed.featuredImageUrl;
-  const attachmentUrl = hasUpload(attachmentFile)
-    ? await storeUpload({ barangayId: session.barangayId, file: attachmentFile, kind: "document", folder: "announcements" })
+  const attachmentUrl = uploadedAttachment
+    ? uploadedAttachment.url
     : formData.get("removeAttachment") === "on"
       ? null
       : parsed.attachmentUrl;
@@ -140,7 +136,7 @@ export async function updateAnnouncement(id: string, formData: FormData) {
     entityId: id,
     description: `Updated announcement "${parsed.title}".`,
   });
-  await logAnnouncementUploads(session.barangayId, session.userId, id, imageFile, attachmentFile);
+  await logAnnouncementUploads(session.barangayId, session.userId, id, Boolean(uploadedImage), Boolean(uploadedAttachment));
 
   if (current.isPublished !== parsed.isPublished) {
     await logAuditEvent({
@@ -161,10 +157,10 @@ async function logAnnouncementUploads(
   barangayId: string,
   userId: string,
   announcementId: string,
-  imageFile: FormDataEntryValue | null,
-  attachmentFile: FormDataEntryValue | null,
+  imageUploaded: boolean,
+  attachmentUploaded: boolean,
 ) {
-  if (hasUpload(imageFile)) {
+  if (imageUploaded) {
     await logAuditEvent({
       barangayId,
       userId,
@@ -175,7 +171,7 @@ async function logAnnouncementUploads(
     });
   }
 
-  if (hasUpload(attachmentFile)) {
+  if (attachmentUploaded) {
     await logAuditEvent({
       barangayId,
       userId,
@@ -185,6 +181,21 @@ async function logAnnouncementUploads(
       description: "Uploaded announcement attachment.",
     });
   }
+}
+
+async function readVerifiedBlob(
+  formData: FormData,
+  field: string,
+  barangayId: string,
+  kind: "image" | "document",
+) {
+  const url = String(formData.get(field) ?? "").trim();
+
+  if (!url) {
+    return null;
+  }
+
+  return verifyBlobUploadUrl(url, barangayId, { kind, folder: "announcements" });
 }
 
 export async function setAnnouncementPublished(id: string, publish: boolean) {

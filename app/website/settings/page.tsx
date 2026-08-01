@@ -1,4 +1,5 @@
 import { DashboardShell } from "@/components/layout/dashboard-shell";
+import { BlobUploadForm } from "@/components/uploads/blob-upload-form";
 import { PageHeader } from "@/components/ui/page-header";
 import { prisma } from "@/lib/prisma";
 import { canManageWebsiteContent, requireWebsiteSession } from "@/lib/website/access";
@@ -17,7 +18,15 @@ export default async function WebsiteSettingsPage() {
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
         <PageHeader eyebrow="Website" title="Website Settings" description="Update the public website welcome text, images, colors, and contact details." />
         {!canManage ? <AccessNotice message="Staff can view website settings. Only admins and secretaries can edit them." /> : null}
-        <form action={updateWebsiteSettings} className="space-y-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <BlobUploadForm
+          action={updateWebsiteSettings}
+          barangayId={session.barangayId}
+          className="space-y-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
+          uploadFields={[
+            { fileField: "logoFile", blobUrlField: "logoBlobUrl", folder: "identity", kind: "image" },
+            { fileField: "sealFile", blobUrlField: "sealBlobUrl", folder: "identity", kind: "image" },
+          ]}
+        >
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="Welcome title" name="welcomeTitle" defaultValue={barangay?.settings?.welcomeTitle} disabled={!canManage} />
             <Field label="Public service tagline" name="publicServiceTagline" defaultValue={barangay?.settings?.publicServiceTagline} disabled={!canManage} />
@@ -39,7 +48,7 @@ export default async function WebsiteSettingsPage() {
               <button className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">Save Website Settings</button>
             </div>
           ) : null}
-        </form>
+        </BlobUploadForm>
       </div>
     </DashboardShell>
   );

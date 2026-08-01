@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { logAuditEvent } from "@/lib/audit";
+import { type BlobUploadFolder, type BlobUploadKind, verifyBlobUploadUrl } from "@/lib/blob/upload-policy";
 import { prisma } from "@/lib/prisma";
-import { hasUpload, storeUpload } from "@/lib/storage";
 import { canManageWebsiteContent, requireWebsiteSession } from "@/lib/website/access";
 import { publicOfficialSchema, publicServiceSchema, websiteSettingsSchema } from "@/lib/validation/website";
 
@@ -42,15 +42,15 @@ export async function updateWebsiteSettings(formData: FormData) {
     contactNumber: formData.get("contactNumber"),
     contactEmail: formData.get("contactEmail"),
   });
-  const logoFile = formData.get("logoFile");
-  const sealFile = formData.get("sealFile");
-  const logoUrl = hasUpload(logoFile)
-    ? await storeUpload({ barangayId: session.barangayId, file: logoFile, kind: "image", folder: "identity" })
+  const uploadedLogo = await readVerifiedBlob(formData, "logoBlobUrl", session.barangayId, "image", "identity");
+  const uploadedSeal = await readVerifiedBlob(formData, "sealBlobUrl", session.barangayId, "image", "identity");
+  const logoUrl = uploadedLogo
+    ? uploadedLogo.url
     : formData.get("removeLogo") === "on"
       ? null
       : parsed.logoUrl;
-  const sealUrl = hasUpload(sealFile)
-    ? await storeUpload({ barangayId: session.barangayId, file: sealFile, kind: "image", folder: "identity" })
+  const sealUrl = uploadedSeal
+    ? uploadedSeal.url
     : formData.get("removeSeal") === "on"
       ? null
       : parsed.sealUrl;
@@ -100,7 +100,7 @@ export async function updateWebsiteSettings(formData: FormData) {
     entityId: session.barangayId,
     description: "Updated public website settings.",
   });
-  if (hasUpload(logoFile)) {
+  if (uploadedLogo) {
     await logAuditEvent({
       barangayId: session.barangayId,
       userId: session.userId,
@@ -110,7 +110,7 @@ export async function updateWebsiteSettings(formData: FormData) {
       description: "Uploaded public website logo.",
     });
   }
-  if (hasUpload(sealFile)) {
+  if (uploadedSeal) {
     await logAuditEvent({
       barangayId: session.barangayId,
       userId: session.userId,
@@ -139,9 +139,9 @@ export async function savePublicOfficial(formData: FormData) {
     displayOrder: formData.get("displayOrder"),
     isPublished: formData.get("isPublished") === "on",
   });
-  const photoFile = formData.get("photoFile");
-  const photoUrl = hasUpload(photoFile)
-    ? await storeUpload({ barangayId: session.barangayId, file: photoFile, kind: "image", folder: "officials" })
+  const uploadedPhoto = await readVerifiedBlob(formData, "photoBlobUrl", session.barangayId, "image", "officials");
+  const photoUrl = uploadedPhoto
+    ? uploadedPhoto.url
     : formData.get("removePhoto") === "on"
       ? null
       : parsed.photoUrl;
@@ -168,7 +168,7 @@ export async function savePublicOfficial(formData: FormData) {
     entityId: official.id,
     description: `${officialId ? "Updated" : "Created"} public official ${official.name}.`,
   });
-  if (hasUpload(photoFile)) {
+  if (uploadedPhoto) {
     await logAuditEvent({
       barangayId: session.barangayId,
       userId: session.userId,
@@ -201,9 +201,9 @@ export async function savePublicService(formData: FormData) {
     displayOrder: formData.get("displayOrder"),
     isPublished: formData.get("isPublished") === "on",
   });
-  const attachmentFile = formData.get("attachmentFile");
-  const attachmentUrl = hasUpload(attachmentFile)
-    ? await storeUpload({ barangayId: session.barangayId, file: attachmentFile, kind: "document", folder: "services" })
+  const uploadedAttachment = await readVerifiedBlob(formData, "attachmentBlobUrl", session.barangayId, "document", "services");
+  const attachmentUrl = uploadedAttachment
+    ? uploadedAttachment.url
     : formData.get("removeAttachment") === "on"
       ? null
       : parsed.attachmentUrl;
@@ -230,7 +230,7 @@ export async function savePublicService(formData: FormData) {
     entityId: service.id,
     description: `${serviceId ? "Updated" : "Created"} public service ${service.name}.`,
   });
-  if (hasUpload(attachmentFile)) {
+  if (uploadedAttachment) {
     await logAuditEvent({
       barangayId: session.barangayId,
       userId: session.userId,
@@ -243,4 +243,20 @@ export async function savePublicService(formData: FormData) {
 
   const barangay = await prisma.barangay.findUnique({ where: { id: session.barangayId }, select: { slug: true } });
   revalidateWebsite(barangay?.slug);
+}
+
+async function readVerifiedBlob(
+  formData: FormData,
+  field: string,
+  barangayId: string,
+  kind: BlobUploadKind,
+  folder: BlobUploadFolder,
+) {
+  const url = String(formData.get(field) ?? "").trim();
+
+  if (!url) {
+    return null;
+  }
+
+  return verifyBlobUploadUrl(url, barangayId, { kind, folder });
 }

@@ -1,4 +1,5 @@
 import type { Announcement } from "@prisma/client";
+import { BlobUploadForm } from "@/components/uploads/blob-upload-form";
 import { SectionCard } from "@/components/ui/section-card";
 
 type AnnouncementFormProps = {
@@ -7,11 +8,20 @@ type AnnouncementFormProps = {
   mode: "create" | "edit";
   cancelHref?: string;
   redirectBase?: string;
+  barangayId: string;
 };
 
-export function AnnouncementForm({ announcement, action, mode, cancelHref = "/announcements", redirectBase = "/announcements" }: AnnouncementFormProps) {
+export function AnnouncementForm({ announcement, action, mode, barangayId, cancelHref = "/announcements", redirectBase = "/announcements" }: AnnouncementFormProps) {
   return (
-    <form action={action} className="space-y-6">
+    <BlobUploadForm
+      action={action}
+      barangayId={barangayId}
+      className="space-y-6"
+      uploadFields={[
+        { fileField: "featuredImageFile", blobUrlField: "featuredImageBlobUrl", folder: "announcements", kind: "image" },
+        { fileField: "attachmentFile", blobUrlField: "attachmentBlobUrl", folder: "announcements", kind: "document" },
+      ]}
+    >
       <input type="hidden" name="redirectBase" value={redirectBase} />
       <SectionCard
         title="What would you like to announce?"
@@ -62,7 +72,7 @@ export function AnnouncementForm({ announcement, action, mode, cancelHref = "/an
           {mode === "create" ? "Create Announcement" : "Save Changes"}
         </button>
       </div>
-    </form>
+    </BlobUploadForm>
   );
 }
 

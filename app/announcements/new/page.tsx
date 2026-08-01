@@ -36,7 +36,7 @@ export default async function NewAnnouncementPage() {
   return (
     <DashboardShell>
       <PageFrame>
-        <AnnouncementForm action={createAnnouncement} mode="create" />
+        <AnnouncementForm action={createAnnouncement} mode="create" barangayId={session.barangayId} />
       </PageFrame>
     </DashboardShell>
   );

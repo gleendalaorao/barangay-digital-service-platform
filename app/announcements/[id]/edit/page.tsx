@@ -63,7 +63,7 @@ export default async function EditAnnouncementPage({ params }: EditAnnouncementP
   return (
     <DashboardShell>
       <PageFrame title={`Edit ${announcement.title}`}>
-        <AnnouncementForm action={updateAnnouncement.bind(null, id)} announcement={announcement} mode="edit" />
+        <AnnouncementForm action={updateAnnouncement.bind(null, id)} announcement={announcement} mode="edit" barangayId={session.barangayId} />
       </PageFrame>
     </DashboardShell>
   );
