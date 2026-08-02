@@ -1,4 +1,5 @@
 import { DashboardShell } from "@/components/layout/dashboard-shell";
+import { BlobUploadForm } from "@/components/uploads/blob-upload-form";
 import { prisma } from "@/lib/prisma";
 import {
   getBarangaySettingsAccessMessage,
@@ -55,7 +56,15 @@ export default async function BarangaySettingsPage() {
           </p>
         </div>
 
-        <form action={updateBarangaySettings} className="space-y-8">
+        <BlobUploadForm
+          action={updateBarangaySettings}
+          barangayId={session.barangayId}
+          className="space-y-8"
+          uploadFields={[
+            { fileField: "logoFile", blobUrlField: "logoBlobUrl", folder: "identity", kind: "image" },
+            { fileField: "sealFile", blobUrlField: "sealBlobUrl", folder: "identity", kind: "image" },
+          ]}
+        >
           <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-lg font-semibold text-ink-900">Barangay Profile</h2>
             <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -94,10 +103,11 @@ export default async function BarangaySettingsPage() {
 
           <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-lg font-semibold text-ink-900">Logo and Seal</h2>
-            <p className="mt-1 text-sm text-ink-500">Use image URLs for now. File upload will be added in a later milestone.</p>
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <Field label="Barangay logo URL" name="logoUrl" type="url" defaultValue={barangay.settings?.logoUrl} />
               <Field label="Barangay seal URL" name="sealUrl" type="url" defaultValue={barangay.settings?.sealUrl} />
+              <FileField label="Logo" name="logoFile" currentUrl={barangay.settings?.logoUrl} removeName="removeLogo" />
+              <FileField label="Seal" name="sealFile" currentUrl={barangay.settings?.sealUrl} removeName="removeSeal" />
             </div>
           </section>
 
@@ -106,7 +116,7 @@ export default async function BarangaySettingsPage() {
               Save Settings
             </button>
           </div>
-        </form>
+        </BlobUploadForm>
       </div>
     </DashboardShell>
   );
@@ -137,6 +147,40 @@ function Field({
         required={required}
         className="mt-1 h-11 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-ink-900 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
       />
+    </label>
+  );
+}
+
+function FileField({
+  label,
+  name,
+  currentUrl,
+  removeName,
+}: {
+  label: string;
+  name: string;
+  currentUrl?: string | null;
+  removeName: string;
+}) {
+  return (
+    <label className="block">
+      <span className="text-sm font-medium text-ink-700">{label}</span>
+      <input
+        type="file"
+        name={name}
+        className="mt-1 block w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-sm"
+      />
+      <p className="mt-1 text-xs text-ink-500">JPG, PNG, or WebP up to 5MB.</p>
+      {currentUrl ? (
+        <span className="mt-2 block text-xs text-ink-600">
+          <img src={currentUrl} alt="" className="mb-2 h-16 w-16 rounded-md object-cover ring-1 ring-slate-200" />
+          <a href={currentUrl} className="font-medium text-brand-700">Preview current image</a>
+          <span className="ml-2 inline-flex items-center gap-2">
+            <input type="checkbox" name={removeName} className="h-3.5 w-3.5" />
+            Remove
+          </span>
+        </span>
+      ) : null}
     </label>
   );
 }

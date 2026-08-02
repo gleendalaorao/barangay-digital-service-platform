@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { logAuditEvent } from "@/lib/audit";
+import { type BlobUploadFolder, type BlobUploadKind, verifyBlobUploadUrl } from "@/lib/blob/upload-policy";
 import { prisma } from "@/lib/prisma";
 import { requireBarangaySettingsSession } from "@/lib/barangay-settings/access";
 import { barangaySettingsSchema } from "@/lib/validation/barangay-settings";
@@ -34,6 +35,18 @@ function parseSettingsForm(formData: FormData) {
 export async function updateBarangaySettings(formData: FormData) {
   const session = await requireBarangaySettingsSession();
   const parsed = parseSettingsForm(formData);
+  const uploadedLogo = await readVerifiedBlob(formData, "logoBlobUrl", session.barangayId, "image", "identity");
+  const uploadedSeal = await readVerifiedBlob(formData, "sealBlobUrl", session.barangayId, "image", "identity");
+  const logoUrl = uploadedLogo
+    ? uploadedLogo.url
+    : formData.get("removeLogo") === "on"
+      ? null
+      : parsed.logoUrl;
+  const sealUrl = uploadedSeal
+    ? uploadedSeal.url
+    : formData.get("removeSeal") === "on"
+      ? null
+      : parsed.sealUrl;
 
   const existingSlug = await prisma.barangay.findFirst({
     where: {
@@ -82,8 +95,8 @@ export async function updateBarangaySettings(formData: FormData) {
         officialHeaderLine2: parsed.officialHeaderLine2,
         officialHeaderLine3: parsed.officialHeaderLine3,
         certificateFooterNote: parsed.certificateFooterNote,
-        logoUrl: parsed.logoUrl,
-        sealUrl: parsed.sealUrl,
+        logoUrl,
+        sealUrl,
       },
       create: {
         barangayId: session.barangayId,
@@ -98,8 +111,8 @@ export async function updateBarangaySettings(formData: FormData) {
         officialHeaderLine2: parsed.officialHeaderLine2,
         officialHeaderLine3: parsed.officialHeaderLine3,
         certificateFooterNote: parsed.certificateFooterNote,
-        logoUrl: parsed.logoUrl,
-        sealUrl: parsed.sealUrl,
+        logoUrl,
+        sealUrl,
       },
     }),
   ]);
@@ -112,7 +125,43 @@ export async function updateBarangaySettings(formData: FormData) {
     entityId: session.barangayId,
     description: "Updated barangay settings and certificate identity.",
   });
+  if (uploadedLogo) {
+    await logAuditEvent({
+      barangayId: session.barangayId,
+      userId: session.userId,
+      action: "WEBSITE_LOGO_UPLOADED",
+      entity: "BarangaySetting",
+      entityId: session.barangayId,
+      description: "Uploaded public website logo.",
+    });
+  }
+  if (uploadedSeal) {
+    await logAuditEvent({
+      barangayId: session.barangayId,
+      userId: session.userId,
+      action: "WEBSITE_SEAL_UPLOADED",
+      entity: "BarangaySetting",
+      entityId: session.barangayId,
+      description: "Uploaded public website seal.",
+    });
+  }
 
   revalidatePath("/settings/barangay");
   revalidatePath(`/b/${parsed.slug}`);
+}
+
+async function readVerifiedBlob(
+  formData: FormData,
+  field: string,
+  barangayId: string,
+  kind: BlobUploadKind,
+  folder: BlobUploadFolder,
+) {
+  const url = String(formData.get(field) ?? "").trim();
+
+  if (!url) {
+    return null;
+  }
+
+  return verifyBlobUploadUrl(url, barangayId, { kind, folder });
 }
