@@ -129,6 +129,7 @@ export default async function PublicBarangayPage({ params }: PublicBarangayPageP
             ) : (
               barangay.publicOfficials.map((official) => (
                 <div key={official.id} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                  {official.photoUrl ? <img src={official.photoUrl} alt="" className="mb-3 h-16 w-16 rounded-full object-cover" /> : null}
                   <h3 className="font-semibold text-slate-950">{official.name}</h3>
                   <p className="mt-1 text-sm text-emerald-700">{official.position}</p>
                   {official.contact ? <p className="mt-2 text-sm text-slate-500">{official.contact}</p> : null}
@@ -151,6 +152,7 @@ export default async function PublicBarangayPage({ params }: PublicBarangayPageP
             ) : (
               barangay.announcements.map((announcement) => (
                 <article key={announcement.id} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                  {announcement.featuredImageUrl ? <img src={announcement.featuredImageUrl} alt="" className="mb-3 max-h-40 w-full rounded-md object-cover" /> : null}
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
