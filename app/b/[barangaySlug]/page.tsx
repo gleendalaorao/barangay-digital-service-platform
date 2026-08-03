@@ -48,7 +48,15 @@ export default async function PublicBarangayPage({ params }: PublicBarangayPageP
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
             <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700">
-              <Building2 className="h-8 w-8" aria-hidden="true" />
+              {barangay.settings?.logoUrl?.trim() ? (
+                <img
+                  src={barangay.settings.logoUrl}
+                  alt={`${displayName} logo`}
+                  className="h-12 w-12 object-contain"
+                />
+              ) : (
+                <Building2 className="h-8 w-8" aria-hidden="true" />
+              )}
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium uppercase tracking-[0.16em] text-emerald-700">Online Citizen Services</p>
