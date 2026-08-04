@@ -847,6 +847,278 @@ async function main() {
       },
     });
   }
+
+  await seedHolyRedeemer(freePlan.id, passwordHash);
+}
+
+async function seedHolyRedeemer(freePlanId: string, passwordHash: string) {
+  const barangay = await prisma.barangay.upsert({
+    where: { slug: "holy-redeemer" },
+    update: {
+      name: "Barangay Holy Redeemer",
+      municipality: "Butuan City",
+      province: "Agusan del Norte",
+      region: "Region XIII",
+      contactEmail: "office@holyredeemer.local",
+      contactNumber: "+63 917 555 0276",
+    },
+    create: {
+      name: "Barangay Holy Redeemer",
+      municipality: "Butuan City",
+      province: "Agusan del Norte",
+      region: "Region XIII",
+      slug: "holy-redeemer",
+      contactEmail: "office@holyredeemer.local",
+      contactNumber: "+63 917 555 0276",
+    },
+  });
+
+  const settings = {
+    certificatePrefix: "HOLYREDEEMER",
+    officeAddress: "Barangay Holy Redeemer Hall, Purok 3, Butuan City, Agusan del Norte",
+    officeHours: "Monday to Friday, 8:00 AM to 5:00 PM",
+    captainName: "Hon. Daniel M. Cabahug",
+    secretaryName: "Lorna V. Ecleo",
+    treasurerName: "Rebecca S. Amora",
+    skChairpersonName: "Miguel A. Corvera",
+    officialHeaderLine1: "Republic of the Philippines",
+    officialHeaderLine2: "City of Butuan, Province of Agusan del Norte",
+    officialHeaderLine3: "Barangay Holy Redeemer",
+    releaseInstructions: "Approved documents may be claimed at the barangay hall upon presentation of a valid ID and tracking or control number.",
+    certificateFooterNote: "This document is valid only for the purpose stated and is subject to verification.",
+    logoUrl: null,
+    sealUrl: null,
+    welcomeTitle: "Welcome to Barangay Holy Redeemer",
+    welcomeMessage: "Request barangay documents, follow community announcements, and access resident services online.",
+    publicServiceTagline: "Accessible, dependable, and community-centered public service.",
+    primaryColor: "#1d4ed8",
+    secondaryColor: "#0f766e",
+    facebookPageUrl: "https://www.facebook.com/barangayholyredeemer",
+  };
+
+  await prisma.barangaySetting.upsert({
+    where: { barangayId: barangay.id },
+    update: settings,
+    create: { barangayId: barangay.id, ...settings },
+  });
+
+  await prisma.subscription.upsert({
+    where: { id: "seed-holy-redeemer-subscription" },
+    update: { barangayId: barangay.id, planId: freePlanId, status: SubscriptionStatus.TRIAL },
+    create: { id: "seed-holy-redeemer-subscription", barangayId: barangay.id, planId: freePlanId, status: SubscriptionStatus.TRIAL },
+  });
+
+  const userSeeds = [
+    { name: "Clarissa M. Abellanosa", email: "admin@holyredeemer.local", role: Role.ADMIN },
+    { name: "Lorna V. Ecleo", email: "secretary@holyredeemer.local", role: Role.SECRETARY },
+    { name: "Daniel M. Cabahug", email: "captain@holyredeemer.local", role: Role.CAPTAIN },
+    { name: "Kevin R. Maturan", email: "staff@holyredeemer.local", role: Role.STAFF },
+  ];
+  const users = new Map<string, Awaited<ReturnType<typeof prisma.user.upsert>>>();
+
+  for (const user of userSeeds) {
+    const savedUser = await prisma.user.upsert({
+      where: { email: user.email },
+      update: { ...user, passwordHash, isActive: true, barangayId: barangay.id },
+      create: { ...user, passwordHash, isActive: true, barangayId: barangay.id },
+    });
+    users.set(user.email, savedUser);
+  }
+
+  const households = [
+    { id: "seed-household-holy-redeemer-aquino", householdNo: "HR-0001", addressLine: "Purok 1, Mabini Street", purok: "Purok 1" },
+    { id: "seed-household-holy-redeemer-bautista", householdNo: "HR-0002", addressLine: "Purok 2, Acacia Road", purok: "Purok 2" },
+    { id: "seed-household-holy-redeemer-canete", householdNo: "HR-0003", addressLine: "Purok 3, Narra Avenue", purok: "Purok 3" },
+    { id: "seed-household-holy-redeemer-lumapas", householdNo: "HR-0004", addressLine: "Purok 4, Riverside Drive", purok: "Purok 4" },
+    { id: "seed-household-holy-redeemer-montenegro", householdNo: "HR-0005", addressLine: "Purok 5, Butuan-Cabadbaran Road", purok: "Purok 5" },
+  ];
+
+  for (const household of households) {
+    await prisma.household.upsert({
+      where: { barangayId_householdNo: { barangayId: barangay.id, householdNo: household.householdNo } },
+      update: {
+        addressLine: household.addressLine,
+        addressBarangay: barangay.name,
+        city: barangay.municipality,
+        province: barangay.province,
+        purok: household.purok,
+        isActive: true,
+      },
+      create: {
+        ...household,
+        barangayId: barangay.id,
+        addressBarangay: barangay.name,
+        city: barangay.municipality,
+        province: barangay.province,
+        isActive: true,
+      },
+    });
+  }
+
+  const savedHouseholds = await prisma.household.findMany({
+    where: { barangayId: barangay.id, householdNo: { in: households.map((household) => household.householdNo) } },
+  });
+  const householdByNo = new Map(savedHouseholds.map((household) => [household.householdNo, household]));
+  const residents = [
+    { id: "seed-resident-hr-ramon-aquino", householdNo: "HR-0001", firstName: "Ramon", middleName: "Garcia", lastName: "Aquino", birthDate: "1975-03-18", gender: "Male", civilStatus: "Married", contactNumber: "+63 917 202 1001", occupation: "Delivery Driver", addressLine: "Purok 1, Mabini Street", purok: "Purok 1" },
+    { id: "seed-resident-hr-liza-aquino", householdNo: "HR-0001", firstName: "Liza", middleName: "Perez", lastName: "Aquino", birthDate: "1978-08-09", gender: "Female", civilStatus: "Married", contactNumber: "+63 917 202 1002", occupation: "Food Vendor", addressLine: "Purok 1, Mabini Street", purok: "Purok 1" },
+    { id: "seed-resident-hr-camille-aquino", householdNo: "HR-0001", firstName: "Camille", middleName: "Perez", lastName: "Aquino", birthDate: "2005-11-24", gender: "Female", civilStatus: "Single", contactNumber: "+63 917 202 1003", occupation: "College Student", addressLine: "Purok 1, Mabini Street", purok: "Purok 1" },
+    { id: "seed-resident-hr-ernesto-bautista", householdNo: "HR-0002", firstName: "Ernesto", middleName: "Lopez", lastName: "Bautista", birthDate: "1958-01-30", gender: "Male", civilStatus: "Widowed", contactNumber: "+63 917 202 2001", occupation: "Retired Carpenter", addressLine: "Purok 2, Acacia Road", purok: "Purok 2" },
+    { id: "seed-resident-hr-grace-bautista", householdNo: "HR-0002", firstName: "Grace", middleName: "Lopez", lastName: "Bautista", birthDate: "1986-06-12", gender: "Female", civilStatus: "Single", contactNumber: "+63 917 202 2002", occupation: "Community Health Nurse", addressLine: "Purok 2, Acacia Road", purok: "Purok 2" },
+    { id: "seed-resident-hr-mario-canete", householdNo: "HR-0003", firstName: "Mario", middleName: "Diaz", lastName: "Canete", birthDate: "1989-02-14", gender: "Male", civilStatus: "Married", contactNumber: "+63 917 202 3001", occupation: "Electrician", addressLine: "Purok 3, Narra Avenue", purok: "Purok 3" },
+    { id: "seed-resident-hr-jessa-canete", householdNo: "HR-0003", firstName: "Jessa", middleName: "Rivera", lastName: "Canete", birthDate: "1991-10-07", gender: "Female", civilStatus: "Married", contactNumber: "+63 917 202 3002", occupation: "Elementary School Teacher", addressLine: "Purok 3, Narra Avenue", purok: "Purok 3" },
+    { id: "seed-resident-hr-paulo-canete", householdNo: "HR-0003", firstName: "Paulo", middleName: "Rivera", lastName: "Canete", birthDate: "2013-04-22", gender: "Male", civilStatus: "Single", contactNumber: "+63 917 202 3003", occupation: "Student", addressLine: "Purok 3, Narra Avenue", purok: "Purok 3" },
+    { id: "seed-resident-hr-teresa-lumapas", householdNo: "HR-0004", firstName: "Teresa", middleName: "Velasco", lastName: "Lumapas", birthDate: "1966-09-03", gender: "Female", civilStatus: "Separated", contactNumber: "+63 917 202 4001", occupation: "Market Vendor", addressLine: "Purok 4, Riverside Drive", purok: "Purok 4" },
+    { id: "seed-resident-hr-nicole-lumapas", householdNo: "HR-0004", firstName: "Nicole", middleName: "Velasco", lastName: "Lumapas", birthDate: "1999-12-17", gender: "Female", civilStatus: "Single", contactNumber: "+63 917 202 4002", occupation: "Customer Service Representative", addressLine: "Purok 4, Riverside Drive", purok: "Purok 4" },
+    { id: "seed-resident-hr-alvin-montenegro", householdNo: "HR-0005", firstName: "Alvin", middleName: "Sarmiento", lastName: "Montenegro", birthDate: "1983-05-28", gender: "Male", civilStatus: "Married", contactNumber: "+63 917 202 5001", occupation: "Public Utility Driver", addressLine: "Purok 5, Butuan-Cabadbaran Road", purok: "Purok 5" },
+    { id: "seed-resident-hr-maribel-montenegro", householdNo: "HR-0005", firstName: "Maribel", middleName: "Castro", lastName: "Montenegro", birthDate: "1985-07-16", gender: "Female", civilStatus: "Married", contactNumber: "+63 917 202 5002", occupation: "Seamstress", addressLine: "Purok 5, Butuan-Cabadbaran Road", purok: "Purok 5" },
+    { id: "seed-resident-hr-joshua-montenegro", householdNo: "HR-0005", firstName: "Joshua", middleName: "Castro", lastName: "Montenegro", birthDate: "2004-03-11", gender: "Male", civilStatus: "Single", contactNumber: "+63 917 202 5003", occupation: "Vocational Student", addressLine: "Purok 5, Butuan-Cabadbaran Road", purok: "Purok 5" },
+    { id: "seed-resident-hr-sofia-montenegro", householdNo: "HR-0005", firstName: "Sofia", middleName: "Castro", lastName: "Montenegro", birthDate: "2010-08-26", gender: "Female", civilStatus: "Single", contactNumber: "+63 917 202 5004", occupation: "Student", addressLine: "Purok 5, Butuan-Cabadbaran Road", purok: "Purok 5" },
+  ];
+
+  for (const resident of residents) {
+    const household = householdByNo.get(resident.householdNo);
+    const data = {
+      barangayId: barangay.id,
+      householdId: household?.id,
+      firstName: resident.firstName,
+      middleName: resident.middleName,
+      lastName: resident.lastName,
+      birthDate: new Date(resident.birthDate),
+      gender: resident.gender,
+      civilStatus: resident.civilStatus,
+      contactNumber: resident.contactNumber,
+      occupation: resident.occupation,
+      citizenship: "Filipino",
+      addressLine: resident.addressLine,
+      addressBarangay: barangay.name,
+      city: barangay.municipality,
+      province: barangay.province,
+      purok: resident.purok,
+      isActive: true,
+    };
+    await prisma.resident.upsert({ where: { id: resident.id }, update: data, create: { id: resident.id, ...data } });
+  }
+
+  const householdHeads = [
+    ["HR-0001", "seed-resident-hr-ramon-aquino"],
+    ["HR-0002", "seed-resident-hr-ernesto-bautista"],
+    ["HR-0003", "seed-resident-hr-mario-canete"],
+    ["HR-0004", "seed-resident-hr-teresa-lumapas"],
+    ["HR-0005", "seed-resident-hr-alvin-montenegro"],
+  ] as const;
+  for (const [householdNo, headResidentId] of householdHeads) {
+    await prisma.household.update({
+      where: { barangayId_householdNo: { barangayId: barangay.id, householdNo } },
+      data: { headResidentId },
+    });
+  }
+
+  const secretary = users.get("secretary@holyredeemer.local");
+  const captain = users.get("captain@holyredeemer.local");
+  const staff = users.get("staff@holyredeemer.local");
+  const admin = users.get("admin@holyredeemer.local");
+  const certificates = [
+    { controlNumber: "HOLYREDEEMER-2026-0001", residentId: "seed-resident-hr-camille-aquino", requestedById: secretary?.id, approvedById: null, certificateType: CertificateType.BARANGAY_CLEARANCE, status: CertificateStatus.DRAFT, purpose: "University scholarship application", remarks: "Draft prepared for resident verification.", issuedAt: null, releasedAt: null },
+    { controlNumber: "HOLYREDEEMER-2026-0002", residentId: "seed-resident-hr-nicole-lumapas", requestedById: staff?.id, approvedById: null, certificateType: CertificateType.RESIDENCY, status: CertificateStatus.PENDING_APPROVAL, purpose: "Employment onboarding requirement", remarks: "Awaiting captain approval.", issuedAt: null, releasedAt: null },
+    { controlNumber: "HOLYREDEEMER-2026-0003", residentId: "seed-resident-hr-mario-canete", requestedById: secretary?.id, approvedById: null, certificateType: CertificateType.BARANGAY_CLEARANCE, status: CertificateStatus.PENDING_APPROVAL, purpose: "Electrical contractor accreditation", remarks: "Supporting records have been reviewed.", issuedAt: null, releasedAt: null },
+    { controlNumber: "HOLYREDEEMER-2026-0004", residentId: "seed-resident-hr-ernesto-bautista", requestedById: secretary?.id, approvedById: captain?.id, certificateType: CertificateType.INDIGENCY, status: CertificateStatus.APPROVED, purpose: "Hospital assistance application", remarks: "Approved for release.", issuedAt: new Date("2026-07-24T09:20:00+08:00"), releasedAt: null },
+    { controlNumber: "HOLYREDEEMER-2026-0005", residentId: "seed-resident-hr-alvin-montenegro", requestedById: staff?.id, approvedById: captain?.id, certificateType: CertificateType.BARANGAY_CLEARANCE, status: CertificateStatus.RELEASED, purpose: "Driver franchise renewal", remarks: "Released to requesting resident.", issuedAt: new Date("2026-07-18T10:10:00+08:00"), releasedAt: new Date("2026-07-18T14:35:00+08:00") },
+    { controlNumber: "HOLYREDEEMER-2026-0006", residentId: "seed-resident-hr-grace-bautista", requestedById: secretary?.id, approvedById: captain?.id, certificateType: CertificateType.RESIDENCY, status: CertificateStatus.RELEASED, purpose: "Professional license renewal", remarks: "Released after identity verification.", issuedAt: new Date("2026-07-21T08:45:00+08:00"), releasedAt: new Date("2026-07-21T11:30:00+08:00") },
+  ];
+  for (const certificate of certificates) {
+    await prisma.certificateRequest.upsert({
+      where: { barangayId_controlNumber: { barangayId: barangay.id, controlNumber: certificate.controlNumber } },
+      update: certificate,
+      create: { ...certificate, barangayId: barangay.id },
+    });
+  }
+
+  const publicRequests = [
+    { trackingCode: "HR-PUB-2026-0001", residentId: "seed-resident-hr-liza-aquino", firstName: "Liza", middleName: "Perez", lastName: "Aquino", birthDate: new Date("1978-08-09"), requesterName: "Liza P. Aquino", requesterEmail: "liza.aquino@example.local", requesterMobile: "+63 917 202 1002", certificateType: CertificateType.RESIDENCY, status: PublicRequestStatus.SUBMITTED, purpose: "Water account update", addressLine: "Purok 1, Mabini Street", purok: "Purok 1", notes: "Submitted through the public request portal.", reviewedAt: null, completedAt: null },
+    { trackingCode: "HR-PUB-2026-0002", residentId: "seed-resident-hr-joshua-montenegro", firstName: "Joshua", middleName: "Castro", lastName: "Montenegro", birthDate: new Date("2004-03-11"), requesterName: "Joshua C. Montenegro", requesterEmail: "joshua.montenegro@example.local", requesterMobile: "+63 917 202 5003", certificateType: CertificateType.BARANGAY_CLEARANCE, status: PublicRequestStatus.UNDER_REVIEW, purpose: "On-the-job training requirement", addressLine: "Purok 5, Butuan-Cabadbaran Road", purok: "Purok 5", notes: "Resident details are being validated.", reviewedAt: new Date("2026-07-29T10:15:00+08:00"), completedAt: null },
+    { trackingCode: "HR-PUB-2026-0003", residentId: "seed-resident-hr-teresa-lumapas", firstName: "Teresa", middleName: "Velasco", lastName: "Lumapas", birthDate: new Date("1966-09-03"), requesterName: "Teresa V. Lumapas", requesterEmail: "teresa.lumapas@example.local", requesterMobile: "+63 917 202 4001", certificateType: CertificateType.INDIGENCY, status: PublicRequestStatus.NEEDS_MORE_INFO, purpose: "Medical assistance application", addressLine: "Purok 4, Riverside Drive", purok: "Purok 4", notes: "Please provide the hospital referral or medical abstract.", reviewedAt: new Date("2026-07-28T14:40:00+08:00"), completedAt: null },
+    { trackingCode: "HR-PUB-2026-0004", residentId: "seed-resident-hr-jessa-canete", firstName: "Jessa", middleName: "Rivera", lastName: "Canete", birthDate: new Date("1991-10-07"), requesterName: "Jessa R. Canete", requesterEmail: "jessa.canete@example.local", requesterMobile: "+63 917 202 3002", certificateType: CertificateType.RESIDENCY, status: PublicRequestStatus.READY_FOR_PICKUP, purpose: "School employment record", addressLine: "Purok 3, Narra Avenue", purok: "Purok 3", notes: "Document is ready at the barangay hall.", reviewedAt: new Date("2026-07-25T09:30:00+08:00"), completedAt: new Date("2026-07-26T08:20:00+08:00") },
+    { trackingCode: "HR-PUB-2026-0005", residentId: "seed-resident-hr-ramon-aquino", firstName: "Ramon", middleName: "Garcia", lastName: "Aquino", birthDate: new Date("1975-03-18"), requesterName: "Ramon G. Aquino", requesterEmail: "ramon.aquino@example.local", requesterMobile: "+63 917 202 1001", certificateType: CertificateType.BARANGAY_CLEARANCE, status: PublicRequestStatus.RELEASED, purpose: "Delivery operator renewal", addressLine: "Purok 1, Mabini Street", purok: "Purok 1", notes: "Released after identity verification.", reviewedAt: new Date("2026-07-20T13:15:00+08:00"), completedAt: new Date("2026-07-21T10:05:00+08:00") },
+  ];
+  for (const request of publicRequests) {
+    await prisma.publicDocumentRequest.upsert({ where: { trackingCode: request.trackingCode }, update: { ...request, barangayId: barangay.id }, create: { ...request, barangayId: barangay.id } });
+  }
+
+  const accountData = {
+    barangayId: barangay.id,
+    residentId: null,
+    firstName: "Marites",
+    middleName: "Dela Pena",
+    lastName: "Sayon",
+    suffix: null,
+    birthDate: new Date("1994-02-08T00:00:00+08:00"),
+    gender: "Female",
+    contactNumber: "+63 917 202 6001",
+    passwordHash,
+    addressLine: "Purok 2, Holy Redeemer Access Road",
+    purok: "Purok 2",
+    status: ResidentAccountStatus.PENDING_VERIFICATION,
+    verifiedAt: null,
+  };
+  await prisma.residentAccount.upsert({
+    where: { barangayId_email: { barangayId: barangay.id, email: "marites.sayon@example.local" } },
+    update: accountData,
+    create: { id: "seed-resident-account-hr-marites-sayon", email: "marites.sayon@example.local", ...accountData },
+  });
+  await prisma.residentVerificationRequest.upsert({
+    where: { id: "seed-verification-hr-marites-sayon" },
+    update: { barangayId: barangay.id, accountId: "seed-resident-account-hr-marites-sayon", residentId: null, status: ResidentAccountStatus.PENDING_VERIFICATION, purpose: "Online account registration for requesting barangay certificates.", staffNotes: null, reviewedById: null, reviewedAt: null },
+    create: { id: "seed-verification-hr-marites-sayon", barangayId: barangay.id, accountId: "seed-resident-account-hr-marites-sayon", status: ResidentAccountStatus.PENDING_VERIFICATION, purpose: "Online account registration for requesting barangay certificates." },
+  });
+
+  const announcements = [
+    { id: "seed-announcement-hr-dengue-cleanup", title: "Community Dengue Prevention and Clean-Up Drive", body: "Residents are invited to join the barangay-wide clean-up drive this Saturday at 7:00 AM. Teams will inspect common areas, clear drainage, and remove containers with stagnant water.", category: "Health", isPublished: true, publishedAt: new Date("2026-07-20T08:00:00+08:00"), createdById: secretary?.id },
+    { id: "seed-announcement-hr-immunization", title: "Free Childhood Immunization and Health Consultation", body: "The Barangay Health Station will provide free childhood immunization and basic health consultations on August 8 from 8:30 AM to 3:00 PM. Parents should bring each child's health card.", category: "Health", isPublished: true, publishedAt: new Date("2026-07-27T09:00:00+08:00"), createdById: admin?.id },
+    { id: "seed-announcement-hr-water-advisory", title: "Temporary Water Service Interruption Advisory", body: "Scheduled line maintenance may interrupt water service in Puroks 3, 4, and 5 on August 5 from 9:00 AM to 4:00 PM. Affected households are advised to store enough water beforehand.", category: "Advisory", isPublished: true, publishedAt: new Date("2026-08-02T10:30:00+08:00"), createdById: secretary?.id },
+    { id: "seed-announcement-hr-sports-league", title: "Holy Redeemer Inter-Purok Sports League Registration", body: "Registration for the barangay basketball and volleyball leagues will open at the barangay hall. Team managers should prepare their player lists and proof of residency.", category: "Youth and Sports", isPublished: false, publishedAt: null, createdById: staff?.id },
+  ];
+  for (const announcement of announcements) {
+    const data = { barangayId: barangay.id, title: announcement.title, body: announcement.body, category: announcement.category, featuredImageUrl: null, attachmentUrl: null, isPublished: announcement.isPublished, publishedAt: announcement.publishedAt, createdById: announcement.createdById };
+    await prisma.announcement.upsert({ where: { id: announcement.id }, update: data, create: { id: announcement.id, ...data } });
+  }
+
+  const officials = [
+    { id: "seed-official-hr-captain", name: "Hon. Daniel M. Cabahug", position: "Barangay Captain", contact: "+63 917 555 0276", displayOrder: 1 },
+    { id: "seed-official-hr-secretary", name: "Lorna V. Ecleo", position: "Barangay Secretary", contact: "office@holyredeemer.local", displayOrder: 2 },
+    { id: "seed-official-hr-treasurer", name: "Rebecca S. Amora", position: "Barangay Treasurer", contact: "+63 917 555 0277", displayOrder: 3 },
+    { id: "seed-official-hr-kagawad-balan", name: "Noel P. Balan", position: "Barangay Kagawad - Peace and Order", contact: "+63 917 555 0278", displayOrder: 4 },
+    { id: "seed-official-hr-kagawad-tiu", name: "Jocelyn R. Tiu", position: "Barangay Kagawad - Health and Sanitation", contact: "+63 917 555 0279", displayOrder: 5 },
+  ];
+  for (const official of officials) {
+    const data = { barangayId: barangay.id, name: official.name, position: official.position, contact: official.contact, photoUrl: null, displayOrder: official.displayOrder, isPublished: true };
+    await prisma.publicOfficial.upsert({ where: { id: official.id }, update: data, create: { id: official.id, ...data } });
+  }
+
+  const services = [
+    { id: "seed-service-hr-clearance", name: "Barangay Clearance", description: "Certificate for employment, business registration, internship, accreditation, and other official requirements.", requirements: "Valid ID; purpose of request; updated resident profile", processingTime: "Same day if records are complete", feeText: "Please confirm applicable fees at the barangay hall.", displayOrder: 1 },
+    { id: "seed-service-hr-residency", name: "Certificate of Residency", description: "Official proof that a resident currently lives in Barangay Holy Redeemer.", requirements: "Valid ID; current address; purok information", processingTime: "Same day review", feeText: "Free for most public service requirements.", displayOrder: 2 },
+    { id: "seed-service-hr-indigency", name: "Certificate of Indigency", description: "Supporting document for medical, educational, legal-aid, and social assistance applications.", requirements: "Valid ID; statement of purpose; household information", processingTime: "1 working day", feeText: "No fee", displayOrder: 3 },
+  ];
+  for (const service of services) {
+    const data = { barangayId: barangay.id, name: service.name, description: service.description, requirements: service.requirements, processingTime: service.processingTime, feeText: service.feeText, attachmentUrl: null, requestLink: `/b/${barangay.slug}/request`, displayOrder: service.displayOrder, isPublished: true };
+    await prisma.publicService.upsert({ where: { id: service.id }, update: data, create: { id: service.id, ...data } });
+  }
+
+  const auditLogs = [
+    { id: "seed-audit-hr-user-login", userId: admin?.id, action: "USER_LOGIN", entity: "User", entityId: admin?.id, metadata: { email: "admin@holyredeemer.local", result: "success" } },
+    { id: "seed-audit-hr-resident-created", userId: secretary?.id, action: "RESIDENT_CREATED", entity: "Resident", entityId: "seed-resident-hr-ramon-aquino", metadata: { residentName: "Ramon Aquino", source: "seed" } },
+    { id: "seed-audit-hr-certificate-submitted", userId: staff?.id, action: "CERTIFICATE_SUBMITTED", entity: "CertificateRequest", entityId: "HOLYREDEEMER-2026-0002", metadata: { controlNumber: "HOLYREDEEMER-2026-0002", status: CertificateStatus.PENDING_APPROVAL } },
+    { id: "seed-audit-hr-certificate-approved", userId: captain?.id, action: "CERTIFICATE_APPROVED", entity: "CertificateRequest", entityId: "HOLYREDEEMER-2026-0004", metadata: { controlNumber: "HOLYREDEEMER-2026-0004", status: CertificateStatus.APPROVED } },
+    { id: "seed-audit-hr-public-request-reviewed", userId: staff?.id, action: "PUBLIC_REQUEST_REVIEWED", entity: "PublicDocumentRequest", entityId: "HR-PUB-2026-0002", metadata: { trackingCode: "HR-PUB-2026-0002", status: PublicRequestStatus.UNDER_REVIEW } },
+  ];
+  for (const auditLog of auditLogs) {
+    await prisma.auditLog.upsert({
+      where: { id: auditLog.id },
+      update: { barangayId: barangay.id, userId: auditLog.userId, action: auditLog.action, entity: auditLog.entity, entityId: auditLog.entityId, metadata: auditLog.metadata, ipAddress: "127.0.0.1", userAgent: "Prisma seed" },
+      create: { ...auditLog, barangayId: barangay.id, ipAddress: "127.0.0.1", userAgent: "Prisma seed" },
+    });
+  }
 }
 
 main()
